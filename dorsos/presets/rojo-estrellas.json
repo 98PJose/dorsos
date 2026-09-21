@@ -1,0 +1,23 @@
+{
+  "palette": {
+    "background": "#c8102e",
+    "primary": "#ffffff",
+    "secondary": "#8a0b20",
+    "accent": "#f2c14e",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "doble",
+    "options": {}
+  },
+  "pattern": {
+    "kind": "rosetas",
+    "options": {
+      "style": "estrella",
+      "petals": 8
+    }
+  },
+  "style": {
+    "scale": 1.0
+  }
+}

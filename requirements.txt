@@ -1,0 +1,5 @@
+# Dependencias del generador de dorsos: pip install -r requirements.txt
+Pillow>=10.1.0   # dibujo raster, PNG y hojas de muestras (load_default(size=) exige 10.1)
+
+# Solo para las pruebas: pip install pytest
+pytest>=8.0

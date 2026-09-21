@@ -1,0 +1,34 @@
+{
+  "palette": {
+    "background": "#7a1230",
+    "primary": "#f6f0e2",
+    "secondary": "#4d0a1e",
+    "accent": "#d4a94a",
+    "paper": "#f6f0e2"
+  },
+  "frame": {
+    "kind": "ornamentado",
+    "options": {
+      "motif": "festones"
+    }
+  },
+  "pattern": {
+    "kind": "arabescos",
+    "options": {
+      "style": "volutas"
+    }
+  },
+  "medallion": {
+    "kind": "cuatrilobulo",
+    "options": {
+      "interior": "flor",
+      "size": 0.5
+    }
+  },
+  "corners": {
+    "kind": "hojas",
+    "options": {
+      "size_mm": 10.0
+    }
+  }
+}

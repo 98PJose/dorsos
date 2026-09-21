@@ -1,0 +1,22 @@
+{
+  "palette": {
+    "background": "#e8546a",
+    "primary": "#ffffff",
+    "secondary": "#b32a45",
+    "accent": "#2b2b3a",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "doble",
+    "options": {
+      "corner": "redondo"
+    }
+  },
+  "pattern": {
+    "kind": "reticula",
+    "options": {
+      "style": "cuadros",
+      "inner": "cuadrado"
+    }
+  }
+}

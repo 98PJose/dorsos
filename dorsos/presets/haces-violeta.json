@@ -1,0 +1,29 @@
+{
+  "palette": {
+    "background": "#7d4fc9",
+    "primary": "#f0e8ff",
+    "secondary": "#523092",
+    "accent": "#e6c94a",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "simple",
+    "options": {
+      "corner": "cortado",
+      "radius_mm": 3.0
+    }
+  },
+  "pattern": {
+    "kind": "guilloche",
+    "options": {
+      "style": "haces"
+    }
+  },
+  "medallion": {
+    "kind": "roseta",
+    "options": {
+      "interior": "rombo",
+      "size": 0.45
+    }
+  }
+}

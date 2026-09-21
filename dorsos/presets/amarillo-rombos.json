@@ -1,0 +1,31 @@
+{
+  "palette": {
+    "background": "#f2b705",
+    "primary": "#ffffff",
+    "secondary": "#b98700",
+    "accent": "#3a2d5e",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "geometrico",
+    "options": {
+      "motif": "dientes",
+      "band_mm": 2.8
+    }
+  },
+  "pattern": {
+    "kind": "reticula",
+    "options": {
+      "style": "cuadros",
+      "inner": "rombo"
+    }
+  },
+  "medallion": {
+    "kind": "rombo",
+    "options": {
+      "interior": "rombo",
+      "size": 0.5,
+      "rings": 2
+    }
+  }
+}

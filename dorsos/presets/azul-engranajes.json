@@ -1,0 +1,20 @@
+{
+  "palette": {
+    "background": "#1b2a5c",
+    "primary": "#dfe6ff",
+    "secondary": "#0d1638",
+    "accent": "#7f90d6",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "doble",
+    "options": {}
+  },
+  "pattern": {
+    "kind": "rosetas",
+    "options": {
+      "style": "anillos",
+      "petals": 8
+    }
+  }
+}

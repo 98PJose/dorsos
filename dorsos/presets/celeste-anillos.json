@@ -1,0 +1,19 @@
+{
+  "palette": {
+    "background": "#2aa4dc",
+    "primary": "#ffffff",
+    "secondary": "#1876a8",
+    "accent": "#0b3f66",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "simple",
+    "options": {}
+  },
+  "pattern": {
+    "kind": "ondas",
+    "options": {
+      "style": "circulos"
+    }
+  }
+}

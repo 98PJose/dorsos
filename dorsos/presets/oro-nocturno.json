@@ -1,0 +1,36 @@
+{
+  "palette": {
+    "background": "#14141a",
+    "primary": "#d4a94a",
+    "secondary": "#3a3320",
+    "accent": "#f4e3a8",
+    "paper": "#e9e3d3"
+  },
+  "frame": {
+    "kind": "doble",
+    "options": {
+      "corner": "concavo",
+      "radius_mm": 3.0
+    }
+  },
+  "pattern": {
+    "kind": "arabescos",
+    "options": {
+      "style": "ogivas",
+      "cell_mm": 9.0
+    }
+  },
+  "medallion": {
+    "kind": "estrella",
+    "options": {
+      "interior": "roseta",
+      "size": 0.52
+    }
+  },
+  "corners": {
+    "kind": "abanico",
+    "options": {
+      "size_mm": 10.0
+    }
+  }
+}

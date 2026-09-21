@@ -1,0 +1,329 @@
+% Generador de dorsos: modelo geométrico y de simetría.
+%
+% Compilación (desde docs/methodology/):
+%   pdflatex model.tex
+%   pdflatex model.tex      % segunda pasada para las referencias internas
+% Paquetes: amsmath, amssymb, amsthm, booktabs, geometry, hyperref y babel. El
+% español se carga con \babelprovide, igual que en docs/methodology/brisca.tex
+% del repositorio.
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{babel}
+\babelprovide[import, main]{spanish}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+
+\theoremstyle{definition}
+\newtheorem{definicion}{Definición}[section]
+\newtheorem{supuesto}{Supuesto}[section]
+\theoremstyle{plain}
+\newtheorem{proposicion}{Proposición}[section]
+\newtheorem{lema}{Lema}[section]
+\theoremstyle{remark}
+\newtheorem{observacion}{Observación}[section]
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Klein}{\mathcal{K}}
+
+\title{Generador de dorsos: modelo geométrico y de simetría}
+\author{Juegos reunidos}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Convenciones y paso de milímetros a píxeles}
+
+\begin{definicion}[Carta]
+Una carta es el rectángulo $R=[0,W]\times[0,H]\subset\R^2$, en milímetros, con el
+origen arriba a la izquierda y el eje $y$ hacia abajo. Su centro es
+$c=(W/2,\,H/2)$. Los formatos son $(W,H)=(63,88)$ (póker) y $(61{,}5,\,95)$
+(baraja española).
+\end{definicion}
+
+Sea $d$ la resolución en puntos por pulgada y $S$ el factor de sobremuestreo
+(par). El tamaño final en píxeles es
+\[
+  p_x=\operatorname{round}\!\Bigl(\tfrac{W}{25{,}4}\,d\Bigr),\qquad
+  p_y=\operatorname{round}\!\Bigl(\tfrac{H}{25{,}4}\,d\Bigr).
+\]
+Se dibuja en un lienzo de $Sp_x\times Sp_y$ píxeles con escalas por eje
+\[
+  k_x=\frac{Sp_x}{W},\qquad k_y=\frac{Sp_y}{H},\qquad (x,y)\mapsto(k_xx,\;k_yy).
+\]
+
+\begin{proposicion}\label{prop:centro}
+El centro de la carta se transforma en el centro del lienzo, $(Sp_x/2,\,Sp_y/2)$,
+y el error relativo de escala respecto de $S\,d/25{,}4$ es a lo sumo $1/(2p_x)$
+en $x$ (análogo en $y$).
+\end{proposicion}
+\begin{proof}
+$k_x\,W/2=Sp_x/2$ por definición. Además $p_x=\tfrac{W d}{25{,}4}+\varepsilon$
+con $|\varepsilon|\le\tfrac12$, luego $k_x=\tfrac{S d}{25{,}4}\bigl(1+\tfrac{25{,}4\,\varepsilon}{Wd}\bigr)$
+y $\bigl|\tfrac{25{,}4\,\varepsilon}{Wd}\bigr|\le\tfrac{1}{2p_x}\,(1+o(1))$.
+\end{proof}
+
+La PNG guarda $d$ en su cabecera, de modo que $p_x/d\cdot25{,}4$ reproduce $W$ con
+error a lo sumo $12{,}7/d$~mm (0,04~mm a 300~ppp). El SVG usa directamente
+milímetros: \texttt{width="$W$mm"} y \texttt{viewBox="0 0 $W$ $H$"}.
+
+El grosor de una línea de $w$~mm se convierte en $\operatorname{round}(w\,(k_x+k_y)/2)$
+píxeles del lienzo sobremuestreado, con un mínimo de 1.
+
+\section{Simetría como acción de un grupo}
+
+\subsection{El grupo}
+Sean $m_x(x,y)=(W-x,\,y)$ (espejo respecto del eje vertical central),
+$m_y(x,y)=(x,\,H-y)$ (espejo respecto del horizontal) y
+$r(x,y)=(W-x,\,H-y)$ (giro de $180^\circ$ alrededor de $c$).
+
+\begin{proposicion}
+$\Klein=\{e,m_x,m_y,r\}$ es un grupo de isometrías de $R$ isomorfo al de Klein
+$\Z_2\times\Z_2$, con $m_x\circ m_y=r$.
+\end{proposicion}
+\begin{proof}
+Cada elemento es una involución: $m_x^2(x,y)=(W-(W-x),y)=(x,y)$, y análogamente
+$m_y^2=r^2=e$. Además $m_x(m_y(x,y))=m_x(x,H-y)=(W-x,H-y)=r(x,y)$, y $m_y\circ m_x=r$
+por el mismo cálculo, luego el producto es conmutativo y cerrado. Todo elemento
+distinto de $e$ tiene orden 2 y hay cuatro, que es la definición de $\Z_2\times\Z_2$.
+\end{proof}
+
+Los tres subgrupos que ofrece el generador son $\{e,m_x\}$ (simetría
+\emph{bilateral}), $\{e,r\}$ (giro de $180^\circ$) y $\Klein$ (ambas; implica la
+simetría respecto del eje horizontal, porque $m_y=r\circ m_x$).
+
+\subsection{Dominio fundamental y construcción}
+\begin{definicion}
+Para un subgrupo $G\le\Klein$, un \emph{dominio fundamental} $D\subset R$ cumple
+$R=\bigcup_{g\in G}g(D)$ con intersecciones de medida nula.
+\end{definicion}
+
+Se toma $D=[0,W/2]\times[0,H]$ para $\{e,m_x\}$; $D=[0,W]\times[0,H/2]$ para
+$\{e,r\}$; y $D=[0,W/2]\times[0,H/2]$ para $\Klein$. En los tres casos las
+imágenes $g(D)$ son rectángulos que teselan $R$.
+
+Cada módulo dibuja la carta completa, lo que da una función
+$f:R\to\text{colores}$ (la imagen sin simetrizar). La imagen final es
+\[
+  F(p)=f\bigl(g^{-1}p\bigr)\quad\text{si }p\in g(D).
+\]
+
+\begin{proposicion}
+$F$ es $G$-invariante: $F(hp)=F(p)$ para todo $h\in G$ y $p\in R$ (salvo en los
+bordes de medida nula, donde $F$ toma el valor de cualquiera de los dominios que
+tocan).
+\end{proposicion}
+\begin{proof}
+Si $p\in g(D)$, entonces $hp\in(hg)(D)$ y, por definición,
+$F(hp)=f\bigl((hg)^{-1}hp\bigr)=f(g^{-1}p)=F(p)$.
+\end{proof}
+
+\begin{observacion}
+La construcción no exige que $f$ sea simétrica: solo se usa la restricción
+$f|_D$. Por eso los marcos, medallones y esquinas pueden dibujarse sin conocer la
+simetría, y una semilla aleatoria por celda produce igualmente un diseño
+$G$-invariante.
+\end{observacion}
+
+\subsection{Realización exacta sobre píxeles}
+Si el lienzo mide $2a\times2b$ píxeles (par en ambas dimensiones), los giros y
+espejos del generador son las transposiciones de imagen exactas: el píxel
+$(u,v)$ va a $(2a-1-u,\,v)$ para $m_x$, a $(u,\,2b-1-v)$ para $m_y$ y a
+$(2a-1-u,\,2b-1-v)$ para $r$. Como $S$ es par, $Sp_x$ y $Sp_y$ lo son, y por la
+proposición~\ref{prop:centro} el eje de simetría del dibujo coincide con el del
+lienzo. El reescalado por $S$ es un filtro de caja sobre bloques $S\times S$
+alineados; los bloques se transforman en bloques, así que la simetría se conserva
+píxel a píxel tras reducir. Las pruebas automáticas lo comprueban con diferencia
+cero entre la imagen y sus transpuestas.
+
+En SVG se dibuja la carta una vez en un \texttt{<g>} y se añaden, por cada
+$g\ne e$, un \texttt{<use>} con la matriz de $g$ recortado al rectángulo
+$g(D)$. La matriz de $g(x,y)=(ax+by+e,\,cx+dy+f)$ se escribe
+\texttt{matrix(a c b d e f)}, porque SVG ordena las columnas.
+
+\section{Retículas}
+
+\begin{definicion}[Retícula centrada]
+Sea el campo $[x_0,x_1]\times[y_0,y_1]$ de ancho $w$ y alto $h$, con centro
+$(c_x,c_y)$, y $s_0=\text{cell\_mm}\times\text{scale}$ el tamaño nominal de celda.
+\begin{align*}
+  n_x&=\operatorname{impar}\!\bigl(\operatorname{round}(w/s_0)\bigr), & s&=w/n_x,\\
+  n_y&=\operatorname{impar}\!\bigl(\operatorname{round}(h/s)\bigr),
+\end{align*}
+donde $\operatorname{impar}(n)$ es el impar más cercano a $w/s_0$ (o $h/s$) entre
+$n$ y $n\pm1$. Los nodos son $v_{ij}=(c_x+(i-\tfrac{n_x}{2})s,\;c_y+(j-\tfrac{n_y}{2})s)$
+y el centro de la celda $(i,j)$ es $v_{i+\frac12,\,j+\frac12}$.
+\end{definicion}
+
+Así, un número entero de celdas cubre exactamente el ancho, y en vertical sobran
+$(h-n_ys)/2$ arriba y abajo: las celdas de los extremos quedan cortadas por igual,
+como en las barajas reales. El recorte al interior del marco lo hace un polígono.
+
+\begin{proposicion}\label{prop:paridad}
+Si $n_x$ y $n_y$ son impares, el espejo $m_x$ lleva la celda $(i,j)$ a la
+$(n_x-1-i,\,j)$ y el giro $r$ a la $(n_x-1-i,\,n_y-1-j)$, y ambas conservan la
+paridad de $i+j$.
+\end{proposicion}
+\begin{proof}
+El nodo $v_{ij}$ tiene abscisa $c_x+(i-n_x/2)s$; su imagen por $m_x$ es
+$2c_x-\bigl(c_x+(i-n_x/2)s\bigr)=c_x+(n_x-i-n_x/2)s$, es decir el nodo $n_x-i$. El
+centro de celda $i+\tfrac12$ pasa a $n_x-i-\tfrac12=(n_x-1-i)+\tfrac12$. La paridad
+de $n_x-1-i$ es la de $i$ si $n_x-1$ es par, esto es, si $n_x$ es impar. Lo mismo
+en $j$; el giro compone ambos.
+\end{proof}
+
+Por eso las variantes que alternan color o motivo por paridad (\emph{damero},
+\emph{mosaico}) usan celdas impares: con un número par la alternancia se
+invertiría en el eje y aparecerían dos celdas iguales contiguas justo en la
+costura.
+
+\subsection{Malla de rombos}
+Para los rombos se usa el paso $s/2$ y solo los nodos con $i+j$ par, con
+$n_x,n_y$ pares. Un rombo de semidiagonal $s/2$ centrado en $v_{ij}$ es
+$\{|x-x_{ij}|+|y-y_{ij}|\le s/2\}$. Dos rombos vecinos $(i,j)$ y $(i+1,j\pm1)$
+distan $(s/2,\pm s/2)$ y sus bordes comparten exactamente el punto medio
+$v_{ij}+(s/4,\pm s/4)$, que cumple $|s/4|+|s/4|=s/2$; el área de un rombo es
+$2(s/2)^2=s^2/2$ y la densidad de nodos con $i+j$ par es $1/(2(s/2)^2)=2/s^2$, luego
+la malla cubre el plano sin huecos ni solapes ($s^2/2\cdot2/s^2=1$).
+
+Dos rombos comparten arista si y solo si $(\Delta i,\Delta j)=(\pm1,\pm1)$. La
+función $c(i,j)=i\bmod2$ cambia en todos esos desplazamientos, luego es un
+coloreado propio con dos colores (el damero de la malla girada $45^\circ$). El
+coloreado $\lfloor(i-j)/2\rfloor\bmod2$ \emph{no} lo es: da rayas diagonales, y
+por eso el generador usa $i\bmod2$.
+
+\section{Curvas}
+
+\subsection{Unión de círculos}
+Los medallones de roseta y cuatrilóbulo son la unión de círculos $C_k$ de centro
+$q_k$ y radio $\rho_k$ con $|q_k|\le\rho_k$ (contienen o rozan el origen).
+
+\begin{proposicion}
+La unión es estrellada respecto del origen y su función radial es
+\[
+  \varrho(\theta)=\max_k\Bigl[\,u\cdot q_k+\sqrt{(u\cdot q_k)^2-|q_k|^2+\rho_k^2}\,\Bigr],
+  \qquad u=(\cos\theta,\sin\theta).
+\]
+\end{proposicion}
+\begin{proof}
+El rayo $tu$, $t\ge0$, corta a $C_k$ donde $|tu-q_k|^2=\rho_k^2$, es decir
+$t^2-2t\,(u\cdot q_k)+|q_k|^2-\rho_k^2=0$. El producto de raíces es
+$|q_k|^2-\rho_k^2\le0$ y el discriminante reducido es $(u\cdot q_k)^2+\rho_k^2-|q_k|^2\ge0$,
+así que hay una raíz no negativa, $t_k^+=u\cdot q_k+\sqrt{\cdot}$. Cada disco es
+estrellado respecto del origen porque es convexo y lo contiene; una unión de
+conjuntos estrellados respecto de un punto lo es, con radio el máximo.
+\end{proof}
+
+\paragraph{Lóbulos de la roseta.} Con $n$ lóbulos de radio $\rho$ a distancia
+$d=1-\rho$ del centro, dos lóbulos contiguos (centros a distancia $2d\sin(\pi/n)$)
+son tangentes cuando $2d\sin(\pi/n)=2\rho$, esto es
+$\rho=\dfrac{\sin(\pi/n)}{1+\sin(\pi/n)}$. El generador usa $1{,}25\rho$ para que se
+solapen; el contorno alcanza entonces el radio $1+0{,}25\rho$, algo mayor que el
+nominal $1$.
+
+\paragraph{Cuatrilóbulo.} Círculos de radio $1/2$ en $(\pm\tfrac12,0)$ y
+$(0,\pm\tfrac12)$: extensión 1 sobre los ejes; el origen es un punto de la
+frontera de cada uno ($|q|=\rho$) pero la unión lo rodea, y la fórmula sigue
+siendo válida.
+
+\subsection{Rosetón de guilloché}
+Con $k$ lóbulos, profundidad $\delta\in(0,1)$ y $m$ curvas,
+\[
+  r_c(\theta)=R\Bigl[1-\tfrac{\delta}{2}\bigl(1+\cos k(\theta-\varphi_c)\bigr)\Bigr],
+  \qquad \varphi_c=\frac{2\pi c}{mk},\quad c=0,\dots,m-1.
+\]
+Cada curva oscila entre $R(1-\delta)$ y $R$ con $k$ lóbulos, y las $m$ copias
+están giradas una fracción del período $2\pi/k$. Dos curvas $c\ne c'$ se cortan
+donde $\cos k(\theta-\varphi_c)=\cos k(\theta-\varphi_{c'})$; como
+$\cos A=\cos B\iff A=\pm B+2\pi j$ y el caso $A=B$ exige $\varphi_c=\varphi_{c'}$,
+queda $A=-B$, o sea $\theta=\tfrac{\varphi_c+\varphi_{c'}}2+\tfrac{\pi j}{k}$,
+$j=0,\dots,2k-1$: $2k$ cruces por pareja, que forman el moaré característico. Se
+dibujan dos anillos ($R=0{,}47s$, $\delta=0{,}45$ y $R=0{,}26s$, $\delta=0{,}5$).
+
+\paragraph{Haces sinusoidales.} Cada fila usa $y=y_r+A\cos\!\bigl(\tfrac{2\pi(x-c_x)}{\lambda}+\pi\tfrac{c}{m}\bigr)$
+con $c=0,\dots,m-1$. La fase reparte las curvas en $[0,\pi)$, de modo que se
+cruzan en $x$ donde $\cos(\alpha+\pi c/m)=\cos(\alpha+\pi c'/m)$.
+
+\subsection{Voluta}
+La espiral de Arquímedes de centro $q$ es $r(t)=r_0+(r_1-r_0)t$,
+$\theta(t)=\theta_0+2\pi Nt$, $t\in[0,1]$, con $N$ vueltas. La separación
+radial entre vueltas consecutivas es $\Delta r=|r_1-r_0|/N$; para que el trazo de
+ancho $w$ no se funda consigo mismo hace falta $\Delta r>w$. Con $s$ la celda,
+$r_0=0{,}19s$, $r_1=0{,}035s$, $N=1{,}5$ da $\Delta r\approx0{,}10s$.
+La voluta del primer cuadrante se refleja en los otros tres con $m_x$, $m_y$
+y $r$ respecto del centro de la celda, así que la celda tiene simetría $\Klein$.
+
+\subsection{Hoja (lente)}
+Entre $p$ y $q$, con normal unitaria $\nu$ y flecha $b$, los dos arcos se aproximan por
+la parábola $h(t)=4b\,t(1-t)$, $t\in[0,1]$: $\gamma_\pm(t)=p+t(q-p)\pm h(t)\nu$.
+La flecha máxima es $h(\tfrac12)=b$ y la curva es tangente en $p$ y $q$ a
+$\pm4b\nu$.
+
+\subsection{Estrella cóncava (ogivas)}
+En una celda de lado $s$ se centran cuatro círculos de radio $s/2$ en sus
+esquinas. Los centros contiguos distan $s=2\cdot\tfrac s2$, luego son tangentes en
+los puntos medios de los lados. La región de la celda no cubierta por los cuatro
+cuartos de disco es una estrella de cuatro puntas con área
+$s^2-4\cdot\tfrac14\pi(s/2)^2=s^2(1-\pi/4)\approx0{,}215\,s^2$.
+
+\subsection{Escamas y bandas}
+Las escamas son círculos de radio $s/2$ centrados en los nodos de la malla de
+rombos; se pintan por filas de arriba abajo (algoritmo del pintor) y cada fila
+oculta la parte baja de la anterior. Las bandas sinuosas son
+$y=y_r+A\cos\bigl(2\pi(x-c_x)/\lambda\bigr)$ con $\lambda=2s$ y $A=0{,}22s$; al ser
+pares en $x-c_x$ son simétricas respecto del eje vertical sin más.
+
+\section{Marcos con banda}
+Sea $O$ el rectángulo exterior del marco, $t$ el ancho de banda e
+$I=O$ contraído $t$ por cada lado. Las cuatro bandas se recorren en coordenadas
+locales $(u,v)$, con $u\in[0,L]$ a lo largo del lado y $v\in[0,t]$ desde el borde
+exterior. Las transformaciones a página son rotaciones múltiplos de
+$\pi/2$:
+\begin{align*}
+  A_\text{arriba}(u,v)&=(x_0+t+u,\;y_0+v), & L&=w-2t,\\
+  A_\text{derecha}(u,v)&=(x_1-v,\;y_0+t+u), & L&=h-2t,\\
+  A_\text{abajo}(u,v)&=(x_1-t-u,\;y_1-v), & L&=w-2t,\\
+  A_\text{izquierda}(u,v)&=(x_0+v,\;y_1-t-u), & L&=h-2t,
+\end{align*}
+con $O=[x_0,x_1]\times[y_0,y_1]$. Cada una tiene matriz ortogonal de determinante
+$+1$ (p.\,ej.\ la de la derecha: $\left(\begin{smallmatrix}0&-1\\1&0\end{smallmatrix}\right)$),
+luego es un giro. El lado se divide en $n=\max\bigl(1,\operatorname{round}(L/(t\,\mu))\bigr)$
+unidades de longitud $L/n$, con $\mu$ la razón de aspecto de la unidad. Si el motivo
+es simétrico respecto del eje $u=L/(2n)$ de su unidad, el lado lo es respecto de su
+punto medio. En las esquinas hay un bloque $t\times t$ independiente.
+
+\section{Ornamentos de esquina}
+Se diseñan para la esquina superior izquierda $(x_0,y_0)$ del interior del marco,
+con $u$ hacia dentro y $v$ hacia abajo, y se colocan con
+\begin{align*}
+  M_\text{sup-izq}(u,v)&=(x_0+u,\;y_0+v), & M_\text{sup-der}(u,v)&=(x_1-u,\;y_0+v),\\
+  M_\text{inf-der}(u,v)&=(x_1-u,\;y_1-v), & M_\text{inf-izq}(u,v)&=(x_0+u,\;y_1-v),
+\end{align*}
+es decir, con las reflexiones de $\Klein$ alrededor de los ejes del interior.
+
+\section{Reproducibilidad y randomización}
+\begin{supuesto}
+La semilla de Python \texttt{random.Random(str)} es determinista entre plataformas
+(se deriva de la cadena por SHA-512).
+\end{supuesto}
+Cada módulo y cada celda obtienen un generador propio con la cadena
+``\texttt{seed/\allowbreak ranura/\allowbreak i/\allowbreak j}''. Los flujos son independientes: activar o desactivar
+un módulo no altera las decisiones de los demás, y las decisiones de una celda no
+dependen del orden de iteración. La randomización $\operatorname{randomize}(b,\sigma,\Lambda)$
+construye un diseño a partir de $\sigma$ y sobrescribe cada ruta $\lambda\in\Lambda$
+con el valor que tiene en la configuración base $b$; por construcción todo lo
+bloqueado se conserva y lo demás es función de $\sigma$.
+
+\paragraph{Limitaciones.} (i) La simetría es exacta a nivel de píxel en el PNG; en el
+SVG depende del antialiasing del visor en la costura central. (ii) El diseño es
+determinista dada la configuración y la versión del generador: cambiar
+las constantes de un módulo cambia la imagen aunque la semilla sea la misma.
+(iii) No se ha medido la calidad visual con ningún criterio objetivo: los
+intervalos de randomización se eligieron a ojo sobre hojas de muestras.
+
+\end{document}

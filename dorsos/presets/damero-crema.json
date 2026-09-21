@@ -1,0 +1,27 @@
+{
+  "palette": {
+    "background": "#f6f0e2",
+    "primary": "#b3122d",
+    "secondary": "#e9b9b2",
+    "accent": "#1f2a44",
+    "paper": "#f6f0e2"
+  },
+  "frame": {
+    "kind": "ornamentado",
+    "options": {
+      "motif": "hojas"
+    }
+  },
+  "pattern": {
+    "kind": "reticula",
+    "options": {
+      "style": "damero"
+    }
+  },
+  "corners": {
+    "kind": "cuarto_circulo",
+    "options": {
+      "size_mm": 8.0
+    }
+  }
+}

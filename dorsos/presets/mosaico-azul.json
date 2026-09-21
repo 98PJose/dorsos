@@ -1,0 +1,34 @@
+{
+  "palette": {
+    "background": "#1f4fa3",
+    "primary": "#ffffff",
+    "secondary": "#14346f",
+    "accent": "#9ec3ff",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "geometrico",
+    "options": {
+      "motif": "cuadros"
+    }
+  },
+  "pattern": {
+    "kind": "rosetas",
+    "options": {
+      "style": "mosaico"
+    }
+  },
+  "medallion": {
+    "kind": "roseta",
+    "options": {
+      "interior": "estrella",
+      "size": 0.5
+    }
+  },
+  "corners": {
+    "kind": "rombos",
+    "options": {
+      "size_mm": 8.0
+    }
+  }
+}

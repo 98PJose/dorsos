@@ -1,0 +1,29 @@
+{
+  "palette": {
+    "background": "#2aa4dc",
+    "primary": "#ffffff",
+    "secondary": "#1876a8",
+    "accent": "#0b3f66",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "geometrico",
+    "options": {
+      "motif": "escalones"
+    }
+  },
+  "pattern": {
+    "kind": "ondas",
+    "options": {
+      "style": "escamas",
+      "cell_mm": 5.0
+    }
+  },
+  "medallion": {
+    "kind": "ovalo",
+    "options": {
+      "interior": "flor",
+      "size": 0.5
+    }
+  }
+}

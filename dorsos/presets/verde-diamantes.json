@@ -1,0 +1,21 @@
+{
+  "palette": {
+    "background": "#0f8a55",
+    "primary": "#ffffff",
+    "secondary": "#0a5c39",
+    "accent": "#d9e8a0",
+    "paper": "#ffffff"
+  },
+  "frame": {
+    "kind": "simple",
+    "options": {
+      "weight": 2.4
+    }
+  },
+  "pattern": {
+    "kind": "rombos",
+    "options": {
+      "style": "concentricos"
+    }
+  }
+}
