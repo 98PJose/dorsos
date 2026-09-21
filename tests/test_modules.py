@@ -93,3 +93,39 @@ def test_bleed_lets_the_pattern_reach_the_field_edge():
         return max(x for x, _ in clip) - min(x for x, _ in clip)
 
     assert clip_width(True) > clip_width(False)
+
+
+@pytest.mark.parametrize("kind,style", [("panal", "simple"), ("damasco", "ojiva"), ("sembrado", "cruz")])
+def test_staggered_lattice_is_symmetric_by_itself(kind, style):
+    """Las filas al tresbolillo se anclan en el centro, sin apoyarse en la simetría global."""
+    import math
+
+    from dorsos.geometry import Affine
+
+    cfg = DorsoConfig.from_dict({"pattern": {"kind": kind, "options": {"style": style}},
+                                 "frame": {"kind": "none"},
+                                 "symmetry": {"bilateral": False, "rotational_180": False}})
+    scene = build_scene(cfg)
+    card = (0, 0, scene.width, scene.height)
+
+    def inside(prim):
+        """Solo lo visible: las celdas de relleno de fuera de la carta las quita el recorte."""
+        return all(card[0] <= x <= card[2] and card[1] <= y <= card[3] for x, y in prim.points)
+
+    shapes = [p for p in scene.layers[2].items if hasattr(p, "points") and inside(p)]
+
+    def canonical(prim, aff=None):
+        pts = [aff(p) for p in prim.points] if aff else prim.points
+        return tuple(sorted((round(x, 5), round(y, 5)) for x, y in pts))
+
+    original = {canonical(p) for p in shapes}
+    assert len(original) > 10
+    for aff in (Affine.mirror_x(scene.width / 2), Affine.rotate(math.pi, scene.width / 2, scene.height / 2)):
+        assert {canonical(p, aff) for p in shapes} == original
+
+
+def test_braid_redraws_half_the_crossings():
+    """La trenza necesita los parches: sin ellos no hay efecto de encima y debajo."""
+    cfg = DorsoConfig.from_dict({"pattern": {"kind": "entrelazo", "options": {"style": "trenza"}}})
+    plain = DorsoConfig.from_dict({"pattern": {"kind": "celosia"}})
+    assert len(build_scene(cfg).layers[2].items) > len(build_scene(plain).layers[2].items)

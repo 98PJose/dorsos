@@ -1,12 +1,12 @@
 """Patrones florales y de arabescos: rosetas y arabescos (volutas, ogivas)."""
 import math
 
-from ...geometry import Affine, TAU, arc, diamond, spiral
+from ...geometry import Affine, TAU, arc, box, diamond, lens, spiral
 from ...primitives import circle, line, poly, transform_all
 from ...registry import register
 from ..base import Opt
 from ..motifs import petals, rosette, star
-from .base import Pattern
+from .base import Pattern, StaggeredLattice
 
 
 @register("pattern", "rosetas")
@@ -100,3 +100,103 @@ class Arabescos(Pattern):
         out.append(circle(vx, vy, half * 0.6, stroke=ln, width=w))
         out.append(circle(vx, vy, half * 0.25, fill=dt))
         return out
+
+
+@register("pattern", "damasco")
+class Damasco(Pattern):
+    doc = "Damasco de mandorlas ojivales al tresbolillo: vacías, con flor o alternando relleno."
+    options = {**Pattern.common,
+               "cell_mm": Opt(9.0, "ancho de cada mandorla", lo=4.0, hi=22.0, rand=False),
+               "style": Opt("ojiva", "variante", choices=("ojiva", "flor", "alternado")),
+               "petals": Opt(6, "pétalos de la flor interior", lo=4, hi=12)}
+
+    ROW_RATIO = 1.05  # las filas casi se tocan, como en un damasco de tela
+
+    def build(self, ctx):
+        o = self.o
+        lat = StaggeredLattice(ctx.field, o["cell_mm"] * ctx.scale, self.ROW_RATIO)
+        s, w = lat.s, ctx.weight(o["weight"])
+        half, tall = s * 0.42, s * 0.56
+        prims = []
+        for i, j, x, y in lat.cells():
+            ln, fl, dt = self.cell_colors(ctx, i, j)
+            shape = lens((x, y - tall), (x, y + tall), half)
+            filled = o["style"] == "alternado" and (i + j) % 2 == 0
+            prims.append(poly(shape, fill=fl if filled else None, stroke=ln, width=w))
+            if o["style"] == "flor":
+                prims += petals(x, y, s * 0.06, s * 0.3, o["petals"], fl, ln, w * 0.8)
+                prims.append(circle(x, y, s * 0.07, fill=dt))
+            else:
+                prims.append(poly(lens((x, y - tall * 0.6), (x, y + tall * 0.6), half * 0.55),
+                                  stroke=ln, width=w * 0.8))
+                prims.append(circle(x, y, s * 0.06, fill=dt))
+            # Los huecos de una retícula al tresbolillo están a un cuarto de celda a cada
+            # lado, no a media: el par simétrico es lo que hace que la malla lo sea.
+            for side in (-1, 1):
+                prims.append(poly(diamond(x + side * s / 4, y + lat.dy / 2, s * 0.09, lat.dy * 0.11), fill=dt))
+        return prims
+
+
+@register("pattern", "sembrado")
+class Sembrado(Pattern):
+    doc = "Motivo suelto sembrado al tresbolillo: flor de lis, trébol, cruz o lunares."
+    options = {**Pattern.common,
+               "cell_mm": Opt(8.0, "separación entre motivos", lo=3.0, hi=20.0, rand=False),
+               "style": Opt("flor_de_lis", "variante", choices=("flor_de_lis", "trebol", "cruz", "lunares"))}
+
+    ROW_RATIO = 0.95
+
+    def build(self, ctx):
+        o = self.o
+        lat = StaggeredLattice(ctx.field, o["cell_mm"] * ctx.scale, self.ROW_RATIO)
+        s, w = lat.s, ctx.weight(o["weight"])
+        r = s * 0.34
+        prims = []
+        for i, j, x, y in lat.cells():
+            ln, fl, dt = self.cell_colors(ctx, i, j)
+            prims += getattr(self, "motif_" + o["style"])(x, y, r, ln, fl, dt, w)
+        return prims
+
+    @staticmethod
+    def motif_flor_de_lis(x, y, r, ln, fl, dt, w):
+        petal = lens((x, y - r), (x, y + r * 0.3), r * 0.3)
+        out = [poly(petal, fill=ln)]
+        for side in (-1, 1):  # los dos pétalos laterales se abren hacia fuera
+            out.append(poly(lens((x, y + r * 0.15), (x + side * r * 0.8, y - r * 0.5), r * 0.16), fill=ln))
+        out.append(poly(box(x, y + r * 0.38, r * 0.52, r * 0.1), fill=ln))
+        out.append(poly([(x - r * 0.28, y + r * 0.52), (x + r * 0.28, y + r * 0.52), (x, y + r * 0.95)], fill=ln))
+        out.append(circle(x, y - r * 0.3, r * 0.1, fill=dt))
+        return out
+
+    @staticmethod
+    def motif_trebol(x, y, r, ln, fl, dt, w):
+        out = [line([(x, y + r * 0.2), (x, y + r)], ln, w * 1.4)]
+        for k in range(3):
+            a = -math.pi / 2 + TAU * k / 3
+            out.append(circle(x + r * 0.38 * math.cos(a), y + r * 0.38 * math.sin(a), r * 0.36,
+                              fill=fl, stroke=ln, width=w))
+        out.append(circle(x, y, r * 0.12, fill=dt))
+        return out
+
+    @staticmethod
+    def motif_cruz(x, y, r, ln, fl, dt, w):
+        return [poly(flared_cross(x, y, r, r * 0.2, r * 0.42), fill=ln), circle(x, y, r * 0.14, fill=dt)]
+
+    @staticmethod
+    def motif_lunares(x, y, r, ln, fl, dt, w):
+        # el lunar pequeño va a media celda exacta: cualquier otra distancia rompe el espejo
+        return [circle(x, y, r * 0.42, fill=ln), circle(x + r / 0.68, y, r * 0.16, fill=dt)]
+
+
+def flared_cross(x, y, r, waist, tip):
+    """Cruz paté: brazos que se ensanchan de ``waist`` en el centro a ``tip`` en la punta."""
+    pts = []
+    for k in range(4):
+        a = -math.pi / 2 + k * math.pi / 2
+        ux, uy = math.cos(a), math.sin(a)
+        px, py = -uy, ux                      # perpendicular al brazo
+        nx, ny = math.cos(a + math.pi / 2), math.sin(a + math.pi / 2)
+        pts.append((x + ux * r - px * tip, y + uy * r - py * tip))
+        pts.append((x + ux * r + px * tip, y + uy * r + py * tip))
+        pts.append((x + (ux + nx) * waist, y + (uy + ny) * waist))
+    return pts

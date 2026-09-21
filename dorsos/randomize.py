@@ -26,8 +26,9 @@ LAYERS = ("palette", "style", *SLOTS)
 # Peso relativo con que se elige cada módulo de una ranura. "none" = ranura vacía.
 KIND_WEIGHTS = {
     "frame": {"simple": 2, "doble": 3, "geometrico": 3, "ornamentado": 2, NO_MODULE: 0.3},
-    "pattern": {"rombos": 3, "celosia": 3, "reticula": 3, "rosetas": 3, "ondas": 2, "arabescos": 2,
-                "guilloche": 2, NO_MODULE: 0.2},
+    "pattern": {"rombos": 3, "celosia": 3, "reticula": 3, "rosetas": 3, "panal": 3, "mudejar": 3,
+                "ondas": 2, "arabescos": 2, "guilloche": 2, "espiga": 2, "greca": 2, "entrelazo": 2,
+                "damasco": 2, "sembrado": 2, "radial": 1, NO_MODULE: 0.2},
     "medallion": {"circulo": 2, "rombo": 2, "roseta": 2, "estrella": 1, "ovalo": 1, "cuatrilobulo": 1, NO_MODULE: 1},
     "corners": {"cuarto_circulo": 1, "abanico": 1, "roseta": 1, "rombos": 1, "hojas": 1, NO_MODULE: 1.5},
 }

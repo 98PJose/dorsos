@@ -111,6 +111,11 @@ def circle_points(cx, cy, r, segments=CIRCLE_SEGMENTS) -> list[Point]:
 
 
 
+def regular_polygon(cx, cy, r, n, rot=-math.pi / 2) -> list[Point]:
+    """Polígono regular de ``n`` lados y circunradio ``r``; ``rot`` es el ángulo del primer vértice."""
+    return [(cx + r * math.cos(rot + TAU * k / n), cy + r * math.sin(rot + TAU * k / n)) for k in range(n)]
+
+
 def star_polygon(cx, cy, r_out, r_in, n, rot=-math.pi / 2) -> list[Point]:
     pts = []
     for k in range(2 * n):

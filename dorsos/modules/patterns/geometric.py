@@ -5,7 +5,7 @@ from ...geometry import box, diagonal_segment, diamond, star_polygon
 from ...primitives import circle, line, poly
 from ...registry import register
 from ..base import Opt
-from .base import Lattice, Pattern
+from .base import Lattice, Pattern, diagonal_constants
 
 
 @register("pattern", "rombos")
@@ -86,7 +86,7 @@ class Celosia(Pattern):
 
         prims, crossings = [], {}
         for down in (True, False):
-            crossings[down] = consts = self.line_constants(field, s, down)
+            crossings[down] = consts = diagonal_constants(field, s, down)
             for c in consts:
                 for d in offsets:
                     segment = diagonal_segment(field, c + d, down)
@@ -95,18 +95,6 @@ class Celosia(Pattern):
         if style in ("puntos", "rombos"):
             prims += self.nodes(field, s, crossings, fl, dt, ctx.weight(o["weight"]), style)
         return prims
-
-    @staticmethod
-    def line_constants(field, s, down):
-        """Constantes ``c`` de las rectas ``x ± y = c`` que cruzan el campo.
-
-        Se anclan en el centro de la carta: el espejo cambia una familia por la otra y el
-        conjunto de rectas queda invariante, así que la malla sale simétrica.
-        """
-        center = field.cx + field.cy if down else field.cx - field.cy
-        lo = field.x0 + field.y0 if down else field.x0 - field.y1
-        hi = field.x1 + field.y1 if down else field.x1 - field.y0
-        return [center + k * s for k in range(math.floor((lo - center) / s), math.ceil((hi - center) / s) + 1)]
 
     @staticmethod
     def nodes(field, s, crossings, fill, dot, w, style):

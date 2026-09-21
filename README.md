@@ -9,8 +9,8 @@ imágenes externas; la única dependencia es Pillow.
   va en la cabecera y la configuración en un chunk de texto) y SVG en milímetros.
 - **Todo es configuración JSON**: la misma configuración da siempre la misma imagen.
 
-![presets](muestras/presets.png)
 ![aleatorios](muestras/aleatorios.png)
+![patrones](muestras/patrones.png)
 
 ## Instalación
 
@@ -171,7 +171,8 @@ que cambiar la paleta cambie el dorso entero de forma coherente.
 
 ## Patrones
 
-El patrón es el fondo repetido que llena el campo. Todos comparten estas opciones:
+El patrón es el fondo repetido que llena el campo. Hay 15 patrones con 51 variantes entre
+todos. Comparten estas opciones:
 
 | Opción | Por defecto | Qué hace |
 |---|---|---|
@@ -210,10 +211,40 @@ El patrón es el fondo repetido que llena el campo. Todos comparten estas opcion
 | | `ogivas` | Estrellas cóncavas y círculos entrelazados. | |
 | `guilloche` | `rosetones` | Rosetones de curvas desfasadas, como un billete. | `lobes`, `curves` |
 | | `haces` | Haces de sinusoides entrecruzadas. | `lobes`, `curves` |
+| `panal` | `simple` | Panal hexagonal de celdas anidadas. | |
+| | `flor` | Hexágonos con una roseta de seis pétalos dentro. | |
+| | `cubos` | Rombos en tres tonos: cubos en relieve (parqué). | |
+| | `estrellas` | Hexágonos con una estrella de seis puntas. | |
+| `mudejar` | `estrellas` | Estrellas de ocho puntas macizas con cuadros entre ellas. | |
+| | `lazo` | Las mismas estrellas de trazo, como lacería. | |
+| | `octogonos` | Teselado de octógonos y cuadros girados. | |
+| `espiga` | `espiga` | Barras a ±45° alternadas: espiga de parqué. | |
+| | `galon` | Chevrones gruesos en bandas paralelas. | |
+| | `zigzag` | Zigzag de líneas finas, dos por fila. | |
+| `greca` | `meandro` | Greca griega: espirales abiertas sobre un raíl continuo. | |
+| | `olas` | Onda corrida: la misma greca con un giro menos. | |
+| | `almenado` | Onda cuadrada continua, sin raíl. | |
+| `entrelazo` | `cesteria` | Cestería: listones tumbados y de pie en damero. | `bars` |
+| | `trenza` | Cintas diagonales que pasan por encima y por debajo. | |
+| `damasco` | `ojiva` | Mandorlas ojivales al tresbolillo. | `petals` |
+| | `flor` | Cada mandorla con una flor dentro. | `petals` |
+| | `alternado` | Mandorlas alternando relleno y trazo. | `petals` |
+| `sembrado` | `flor_de_lis` | Flores de lis sembradas al tresbolillo. | |
+| | `trebol` | Tréboles de tres hojas con tallo. | |
+| | `cruz` | Cruces paté de brazos ensanchados. | |
+| | `lunares` | Lunares grandes y pequeños alternando. | |
+| `radial` | `rayos` | Sectores alternos desde el centro, con anillos. | `rays` |
+| | `telarana` | Radios y anillos concéntricos. | `rays` |
+| | `moare` | Anillos muy juntos, efecto de muaré. | |
+| | `petalos` | Un solo rosetón que ocupa la carta entera. | `rays` |
 
 - `gap` (0,1–0,5): anchura del canal de fondo entre rombos macizos.
 - `inner`: motivo dentro del cuadro (`cuadrado`, `rombo`, `circulo`, `cruz`, `ninguno`).
-- `petals` (4–16), `lobes` (3–16), `curves` (4–24), `turns` (1–2,5).
+- `petals` (4–16), `lobes` (3–16), `curves` (4–24), `turns` (1–2,5), `bars` (2–4), `rays` (8–48).
+
+`radial` es el único que no tesela: se dibuja desde el centro de la carta, así que no usa
+retícula y `cell_mm` es la separación entre anillos. `panal`, `damasco` y `sembrado` van al
+tresbolillo, con las filas impares desplazadas media celda.
 
 ## Marcos
 
@@ -325,7 +356,7 @@ píxel; en SVG se usan `<use>` con `<clipPath>`. Detalle en `docs/methodology/mo
 ## Pruebas y documentación matemática
 
 ```bash
-python -m pytest                       # 335 pruebas, unos 12 s
+python -m pytest                       # 427 pruebas, unos 13 s
 cd docs/methodology && pdflatex model.tex && pdflatex model.tex
 ```
 

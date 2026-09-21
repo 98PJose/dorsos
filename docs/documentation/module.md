@@ -157,9 +157,12 @@ un anillo sobre cada arco y una lanza entre arcos.
 
 ### `modules/patterns/` — ranura `pattern`
 - `base.py`: `Lattice(field, nominal, sub)` (retícula centrada: `pos`, `center`, `indices`),
-  `fit_count`, y `Pattern`, cuyo `build` recorre los índices y llama a `tile(ctx, lat, x, y,
-  i, j, colors)`. Opciones comunes: `line`, `fill`, `dot`, `weight`, `variation`.
-  `variation` invierte `line`/`fill` de una celda con esa probabilidad (generador por celda).
+  `StaggeredLattice(field, nominal, row_ratio)` (al tresbolillo: `cells()` da `(i, j, x, y)`),
+  `fit_count`, `diagonal_constants` (rectas `x ± y = c` ancladas en el centro), `rows`
+  (filas centradas) y `Pattern`, cuyo `build` recorre los índices y llama a
+  `tile(ctx, lat, x, y, i, j, colors)`. Opciones comunes: `line`, `fill`, `dot`, `weight`,
+  `variation`. `cell_colors` aplica `variation`, que invierte `line`/`fill` de una celda con
+  esa probabilidad (generador por celda); los patrones que no usan `tile` lo llaman a mano.
 - `geometric.py`: `rombos` (`concentricos`, `arlequin`, `cruzado`, `puntos`, más `macizo` y
   `estrellado`, que rellenan el rombo y dejan canales de fondo de anchura `gap` con un rombo
   menor en cada hueco), `celosia` y `reticula` (`cuadros`, `lineas`, `cruces`, `damero`;
@@ -172,6 +175,21 @@ un anillo sobre cada arco y una lanza entre arcos.
   (`volutas`, `ogivas`).
 - `curved.py`: `ondas` (`circulos`, `escamas`, `sinuoso`), `guilloche` (`rosetones`, `haces`).
   `sinuoso` y `haces` no usan celdas: dibujan filas de curvas en todo el campo.
+- `floral.py` incluye además `damasco` (mandorlas ojivales al tresbolillo, con `lens`) y
+  `sembrado` (motivo suelto: flor de lis, trébol, cruz paté o lunares). El rombo que cierra
+  el hueco del damasco va a un cuarto de celda a cada lado, que es donde están los huecos
+  reales de una retícula al tresbolillo; a media celda la malla no sería simétrica.
+- `tilings.py`: `panal` (hexágonos; `cubos` parte cada hexágono en tres rombos y los colorea
+  como las caras de un cubo) y `mudejar` (estrellas de ocho puntas y octógonos).
+- `bands.py`: `espiga` (barras a ±45°, chevrones o zigzag), `greca` (greca griega: módulos
+  abiertos colgando de un raíl continuo, más el almenado, que es una onda cuadrada de una
+  sola polilínea) y `entrelazo` (`cesteria` por celdas; `trenza` dibuja las dos familias de
+  cintas diagonales y repinta un parche de la descendente en la mitad de los cruces, que es
+  lo que produce el efecto de encima y debajo).
+- `radial.py`: `radial`, el único polar. No tesela: sale del centro de la carta hasta la
+  esquina más lejana. El número de sectores se redondea a múltiplo de cuatro para que el
+  espejo lleve sector par a sector par. No hay variante de espiral: el espejo invierte el
+  sentido de giro, así que una espiral no puede salir simétrica.
 
 ### `modules/medallions.py` — ranura `medallion`
 `Medallion.build`: halo (despeja el patrón) → relleno → contornos concéntricos → perlas →

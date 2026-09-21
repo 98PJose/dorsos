@@ -53,6 +53,48 @@ class Lattice:
         return [(i, j) for j in range(j0, j1 + 1) for i in range(i0, i1 + 1)]
 
 
+def diagonal_constants(field: Rect, s: float, down: bool) -> list[float]:
+    """Constantes ``c`` de las rectas ``x + y = c`` (``down``) o ``x - y = c`` que cruzan el campo.
+
+    Se anclan en el centro de la carta: el espejo cambia una familia por la otra y el
+    conjunto de rectas queda invariante, así que la malla sale simétrica.
+    """
+    center = field.cx + field.cy if down else field.cx - field.cy
+    lo = field.x0 + field.y0 if down else field.x0 - field.y1
+    hi = field.x1 + field.y1 if down else field.x1 - field.y0
+    return [center + k * s for k in range(math.floor((lo - center) / s), math.ceil((hi - center) / s) + 1)]
+
+
+def rows(field: Rect, height: float, pad: int = 1) -> list[tuple[int, float]]:
+    """``(j, y)`` del borde superior de cada fila de alto ``height``, centradas en el campo."""
+    j0 = math.floor((field.y0 - field.cy) / height) - pad
+    j1 = math.ceil((field.y1 - field.cy) / height) + pad
+    return [(j, field.cy + j * height) for j in range(j0, j1 + 1)]
+
+
+class StaggeredLattice:
+    """Retícula al tresbolillo centrada en el campo: las filas impares van media celda a la derecha.
+
+    ``s`` es el ancho de celda (un número entero de ellas cubre el ancho del campo) y
+    ``dy = s * row_ratio`` la separación entre filas. Las filas pares se anclan en el centro
+    y ``j`` y ``-j`` tienen la misma paridad, así que la retícula ya es simétrica respecto de
+    los dos ejes del campo.
+    """
+
+    def __init__(self, field: Rect, nominal: float, row_ratio: float):
+        self.field = field
+        self.s = field.w / max(1, round(field.w / nominal))
+        self.dy = self.s * row_ratio
+
+    def cells(self, pad=1):
+        """``(i, j, x, y)`` de cada celda que roza el campo, con ``pad`` celdas de margen."""
+        f = self.field
+        for j in range(math.floor((f.y0 - f.cy) / self.dy) - pad, math.ceil((f.y1 - f.cy) / self.dy) + pad + 1):
+            x0 = f.cx + (j % 2) * self.s / 2
+            for i in range(math.floor((f.x0 - x0) / self.s) - pad, math.ceil((f.x1 - x0) / self.s) + pad + 1):
+                yield i, j, x0 + i * self.s, f.cy + j * self.dy
+
+
 class Pattern(Module):
     """Patrón de celdas repetidas. Las subclases implementan ``tile`` y fijan ``sub``."""
     sub = 1
@@ -69,13 +111,17 @@ class Pattern(Module):
         lat = Lattice(ctx.field, o["cell_mm"] * ctx.scale, self.sub)
         prims = []
         for i, j in self.indices(lat):
-            rng = ctx.rng(i, j) if o["variation"] > 0 else None
-            flip = rng is not None and rng.random() < o["variation"]
-            line, fill = (o["fill"], o["line"]) if flip else (o["line"], o["fill"])
-            colors = (ctx.color(line), ctx.color(fill), ctx.color(o["dot"]))
             x, y = lat.center(i, j) if self.sub == 1 else lat.pos(i, j)
-            prims += self.tile(ctx, lat, x, y, i, j, colors)
+            prims += self.tile(ctx, lat, x, y, i, j, self.cell_colors(ctx, i, j))
         return prims
+
+    def cell_colors(self, ctx, i, j):
+        """``(trazo, relleno, detalle)`` de una celda, con el intercambio de ``variation``."""
+        o = self.o
+        line, fill = o["line"], o["fill"]
+        if o["variation"] > 0 and ctx.rng(i, j).random() < o["variation"]:
+            line, fill = fill, line
+        return ctx.color(line), ctx.color(fill), ctx.color(o["dot"])
 
     def indices(self, lat):
         return lat.indices()
