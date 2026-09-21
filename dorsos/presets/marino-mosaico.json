@@ -1,0 +1,33 @@
+{
+  "palette": {
+    "background": "#ffffff",
+    "primary": "#20386b",
+    "secondary": "#20386b",
+    "accent": "#20386b",
+    "paper": "#ffffff"
+  },
+  "style": {
+    "margin_mm": 2.2,
+    "line_width_mm": 0.26,
+    "corner_radius_mm": 3.2
+  },
+  "frame": {
+    "kind": "simple",
+    "options": {
+      "corner": "redondo",
+      "radius_mm": 2.2,
+      "inset_mm": 0.0,
+      "weight": 1.6,
+      "pad_mm": 0.0,
+      "bleed": true
+    }
+  },
+  "pattern": {
+    "kind": "rombos",
+    "options": {
+      "style": "estrellado",
+      "cell_mm": 5.2,
+      "gap": 0.34
+    }
+  }
+}

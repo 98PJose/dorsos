@@ -38,7 +38,8 @@ def build_scene(cfg: DorsoConfig) -> Scene:
     layers = [Group([poly(paper, fill=palette["paper"])]), Group([poly(result.outer, fill=palette["background"])])]
     pattern = module("pattern")
     if pattern:
-        layers.append(Group(pattern.build(inner_ctx("pattern")), clip=tuple(result.inner)))
+        prims = pattern.build(context("pattern", result.pattern_rect))
+        layers.append(Group(prims, clip=tuple(result.pattern_clip)))
     layers.append(Group(result.prims))
     for slot in ("medallion", "corners"):
         mod = module(slot)

@@ -147,6 +147,18 @@ def lens(p, q, bulge, n=14) -> list[Point]:
     return side_a + side_b[-2:0:-1]
 
 
+def diagonal_segment(rect: Rect, c: float, down: bool) -> list[Point] | None:
+    """Trozo dentro de ``rect`` de la recta ``x + y = c`` (``down``) o ``x - y = c``.
+
+    Devuelve ``None`` si la recta no llega a cortar el rectángulo.
+    """
+    if down:
+        lo, hi = max(rect.x0, c - rect.y1), min(rect.x1, c - rect.y0)
+        return None if hi <= lo else [(lo, c - lo), (hi, c - hi)]
+    lo, hi = max(rect.x0, c + rect.y0), min(rect.x1, c + rect.y1)
+    return None if hi <= lo else [(lo, lo - c), (hi, hi - c)]
+
+
 def spiral(cx, cy, r0, r1, a0, turns, direction=1, n=None) -> list[Point]:
     """Espiral de Arquímedes de radio ``r0`` a ``r1`` que empieza en el ángulo ``a0``."""
     n = n or max(12, int(abs(turns) * 40))

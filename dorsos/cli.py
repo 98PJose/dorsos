@@ -10,7 +10,7 @@ from .config import DorsoConfig, merge, set_path
 from .constants import DEFAULT_DPI, FORMATS, SLOTS
 from .errors import ConfigError
 from .presets import load_preset, preset_names
-from .randomize import randomize
+from .randomize import LAYERS, randomize
 from .registry import get_module, kinds
 from .render_png import render_png, save_png
 from .render_svg import render_svg
@@ -29,7 +29,9 @@ def add_config_args(p):
     g.add_argument("--set", dest="sets", action="append", default=[], metavar="RUTA=VALOR",
                    help="fija un parámetro, p. ej. --set frame.kind=geometrico --set style.density=0.7 "
                         "--set 'frame.options={\"motif\":\"puntos\"}' (el valor es JSON o texto)")
-    g.add_argument("--random", action="store_true", help="randomiza todo lo que no esté bloqueado")
+    g.add_argument("--random", nargs="*", default=None, metavar="CAPA", choices=LAYERS,
+                   help="randomiza lo que no esté bloqueado. Sin nombres, todas las capas; con ellos, "
+                        f"solo esas y el resto se conserva. Capas: {', '.join(LAYERS)}")
     g.add_argument("--lock", nargs="+", default=[], metavar="RUTA",
                    help="parámetros que --random conserva: palette, frame, frame.kind, palette.background...")
 
@@ -61,12 +63,16 @@ def base_dict(args) -> tuple[dict, list[str]]:
 def configs_from_args(args, count: int) -> list[tuple[str, DorsoConfig]]:
     data, set_paths = base_dict(args)
     base = DorsoConfig.from_dict(data)
-    first_seed = args.seed if args.seed is not None else (base.seed if not args.random else random.SystemRandom().randrange(10 ** 6))
+    random_on = args.random is not None  # --random sin capas llega como lista vacía
+    if args.seed is not None:
+        first_seed = args.seed
+    else:
+        first_seed = random.SystemRandom().randrange(10 ** 6) if random_on else base.seed
     out = []
     for k in range(count):
         seed = first_seed + k
-        if args.random:
-            cfg = randomize(base, seed, [*args.lock, *set_paths])
+        if random_on:
+            cfg = randomize(base, seed, [*args.lock, *set_paths], layers=args.random or None)
         else:
             cfg = DorsoConfig.from_dict({**data, "seed": seed})
         out.append((args.preset or "dorso", cfg))
@@ -79,7 +85,7 @@ def cmd_generate(args):
     out_dir.mkdir(parents=True, exist_ok=True)
     for label, cfg in items:
         stem = args.name or label
-        if args.random or args.count > 1:
+        if args.random is not None or args.count > 1:
             stem = f"{stem}-{cfg.seed}"
         scene = build_scene(cfg)
         if "png" in args.formats:
@@ -103,7 +109,9 @@ def cmd_sheet(args):
 
 
 def _as_random(args):
-    args.random = True
+    """La hoja de muestras sin ``--presets`` randomiza aunque no se pida."""
+    if args.random is None:
+        args.random = []
     return args
 
 

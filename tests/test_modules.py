@@ -58,3 +58,38 @@ def test_custom_module_can_be_registered():
         assert build_scene(cfg).layers[-1].items[0].r == 3
     finally:
         del _REGISTRY["medallion"]["punto_de_prueba"]
+
+
+def test_diagonal_lattice_is_symmetric_by_itself():
+    """La celosía ancla sus rectas en el centro, sin apoyarse en la simetría global.
+
+    Se compara la geometría y no los píxeles: el trazo grueso de Pillow no es simétrico
+    al píxel, y eso solo lo arregla el espejo del dominio fundamental.
+    """
+    import math
+
+    from dorsos.geometry import Affine
+
+    cfg = DorsoConfig.from_dict({"pattern": {"kind": "celosia"}, "frame": {"kind": "none"},
+                                 "symmetry": {"bilateral": False, "rotational_180": False}})
+    scene = build_scene(cfg)
+    segments = scene.layers[2].items
+
+    def canonical(prim, aff=None):
+        pts = [aff(p) for p in prim.points] if aff else prim.points
+        return tuple(sorted((round(x, 6), round(y, 6)) for x, y in pts))
+
+    original = {canonical(p) for p in segments}
+    assert len(original) > 10
+    for aff in (Affine.mirror_x(scene.width / 2), Affine.rotate(math.pi, scene.width / 2, scene.height / 2)):
+        assert {canonical(p, aff) for p in segments} == original
+
+
+def test_bleed_lets_the_pattern_reach_the_field_edge():
+    def clip_width(bleed):
+        cfg = DorsoConfig.from_dict({"pattern": {"kind": "celosia"},
+                                     "frame": {"kind": "doble", "options": {"bleed": bleed}}})
+        clip = build_scene(cfg).layers[2].clip
+        return max(x for x, _ in clip) - min(x for x, _ in clip)
+
+    assert clip_width(True) > clip_width(False)

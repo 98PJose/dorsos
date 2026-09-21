@@ -1,0 +1,35 @@
+{
+  "palette": {
+    "background": "#3d4349",
+    "primary": "#ffffff",
+    "secondary": "#ffffff",
+    "accent": "#ffffff",
+    "paper": "#ffffff"
+  },
+  "style": {
+    "margin_mm": 2.6,
+    "line_width_mm": 0.26,
+    "corner_radius_mm": 3.2
+  },
+  "frame": {
+    "kind": "doble",
+    "options": {
+      "corner": "redondo",
+      "radius_mm": 2.6,
+      "inset_mm": 2.2,
+      "outer_weight": 1.6,
+      "inner_weight": 3.4,
+      "gap_mm": 1.2,
+      "pad_mm": 0.0,
+      "bleed": true
+    }
+  },
+  "pattern": {
+    "kind": "celosia",
+    "options": {
+      "style": "simple",
+      "cell_mm": 4.3,
+      "weight": 1.0
+    }
+  }
+}

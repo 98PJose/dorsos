@@ -128,10 +128,21 @@ class Module:
 class FrameResult:
     """Lo que devuelve un marco: sus primitivas y las formas que delimita.
 
-    ``outer`` es el contorno del campo de color; ``inner`` la zona interior a la que se
-    recorta el patrón y donde se colocan medallón y esquinas.
+    ``outer`` es el contorno del campo de color; ``inner`` la zona interior del marco,
+    donde se colocan medallón y esquinas. El patrón se recorta a ``inner`` salvo que el
+    marco devuelva ``pattern_area``: un ``(contorno, rectángulo)`` propio, que es como los
+    marcos con ``bleed`` dejan que el patrón pase por debajo de sus líneas.
     """
     prims: list
     outer: list
     inner: list
     inner_rect: Rect
+    pattern_area: tuple | None = None
+
+    @property
+    def pattern_clip(self) -> tuple:
+        return self.pattern_area[0] if self.pattern_area else self.inner
+
+    @property
+    def pattern_rect(self) -> Rect:
+        return self.pattern_area[1] if self.pattern_area else self.inner_rect

@@ -55,7 +55,8 @@ Estructura: `_REGISTRY[slot][name] -> clase`.
   `rotate`, `mirror_x`, `mirror_y`).
 - Contornos (devuelven listas de puntos): `arc`, `circle_points`, `star_polygon`, `diamond`,
   `box`, `lens`, `spiral`, `union_of_circles` (función radial de una unión de círculos),
-  `rect_outline` (esquinas `recto`, `redondo`, `cortado`, `concavo`).
+  `rect_outline` (esquinas `recto`, `redondo`, `cortado`, `concavo`) y `diagonal_segment`
+  (trozo de la recta `x ± y = c` dentro de un rectángulo).
 - Sin dependencias salvo `constants.CIRCLE_SEGMENTS`.
 
 ### `primitives.py`
@@ -72,7 +73,8 @@ ambos (grupo de Klein). Ver `docs/methodology/model.tex`, sección 2.
 
 ### `compose.py`
 `build_scene(cfg)`. Orden de capas: papel (rectángulo redondeado) → campo (fondo) →
-patrón (recortado al interior del marco) → marco → medallón → esquinas. Instancia cada
+patrón (recortado a `result.pattern_clip`) → marco → medallón → esquinas. El patrón va
+antes que el marco, así que un marco con `bleed` se dibuja encima de él. Instancia cada
 módulo activo con `get_module(slot, kind)(options)` y un `Context` con el campo que le
 corresponde (`outer_rect` para el marco; `inner_rect` que devuelve el marco para el resto).
 Si no hay marco, el campo es un rectángulo con radio `PLAIN_FIELD_RADIUS_MM`.
@@ -104,9 +106,12 @@ saturado oscuro y trazo claro el 80 %, invertido el resto; tonos limitados a `HU
 configuraciones parciales (se mezclan sobre los valores por defecto).
 
 ### `randomize.py`
-`randomize(base, seed, lock)`. Genera paleta, estilo y, por ranura, un módulo (con pesos en
-`KIND_WEIGHTS`) y sus opciones (`Module.random_options`); después copia de `base` cada ruta
-de `lock`. No toca `format`, `dpi` ni `symmetry`. Devuelve una `DorsoConfig` validada.
+`randomize(base, seed, lock, layers)`. Genera paleta, estilo y, por ranura, un módulo (con
+pesos en `KIND_WEIGHTS`) y sus opciones (`Module.random_options`); después copia de `base`
+cada ruta de `lock`. `LAYERS` son las capas aleatorizables (`palette`, `style` y las cuatro
+ranuras); `layers=None` las aleatoriza todas y, si se da una lista, las demás se añaden al
+bloqueo, que es cómo `--random pattern` deja el resto intacto. No toca `format`, `dpi` ni
+`symmetry`. Devuelve una `DorsoConfig` validada.
 
 ### `sheet.py`
 `contact_sheet(items, cols, card_height_px)` → imagen con las cartas en cuadrícula y su
@@ -132,26 +137,37 @@ Todos derivan de `modules/base.Module` y se registran con `@register(ranura, nom
   independiente por módulo y clave).
 - `Module`: `options` (dict de `Opt`), `resolve_options(given)` (valida y rellena defectos),
   `random_options(rng)`.
-- `FrameResult(prims, outer, inner, inner_rect)`.
+- `FrameResult(prims, outer, inner, inner_rect, pattern_area)`. `pattern_area` es un
+  `(contorno, rectángulo)` opcional para el patrón; si es `None`, el patrón usa `inner`.
+  Las propiedades `pattern_clip` y `pattern_rect` resuelven ese valor por defecto.
 
 ### `modules/motifs.py`
 Piezas reutilizables: `petals`, `rosette`, `star`, `ring_of_dots`, `disc`.
 
 ### `modules/frames.py` — ranura `frame`
 `Frame.build(ctx) -> FrameResult`. `LineFrame` (`simple`, `doble`): rectángulo(s)
-concéntrico(s) con esquina `recto|redondo|cortado|concavo`. `BandFrame` (`geometrico`,
+concéntrico(s) con esquina `recto|redondo|cortado|concavo`. Su opción `bleed` devuelve un
+`pattern_area` igual al campo entero: el patrón pasa por debajo de las líneas en vez de
+recortarse al interior del marco. `BandFrame` (`geometrico`,
 `ornamentado`): banda de ancho `band_mm` con un motivo repetido; cada lado se recorre en
 coordenadas locales `(u, v)` y se lleva a la página con una rotación (`BandFrame.sides`).
 Los motivos son métodos `motif_<nombre>(ctx, unidad, ancho)`; `corner_motif` dibuja los
-bloques de esquina. Bucles: por lado, por unidad de motivo.
+bloques de esquina. Bucles: por lado, por unidad de motivo. `motif_arcos` es la arcada con
+un anillo sobre cada arco y una lanza entre arcos.
 
 ### `modules/patterns/` — ranura `pattern`
 - `base.py`: `Lattice(field, nominal, sub)` (retícula centrada: `pos`, `center`, `indices`),
   `fit_count`, y `Pattern`, cuyo `build` recorre los índices y llama a `tile(ctx, lat, x, y,
   i, j, colors)`. Opciones comunes: `line`, `fill`, `dot`, `weight`, `variation`.
   `variation` invierte `line`/`fill` de una celda con esa probabilidad (generador por celda).
-- `geometric.py`: `rombos` (`concentricos`, `arlequin`, `cruzado`, `puntos`), `reticula`
-  (`cuadros`, `lineas`, `cruces`, `damero`; `inner`).
+- `geometric.py`: `rombos` (`concentricos`, `arlequin`, `cruzado`, `puntos`, más `macizo` y
+  `estrellado`, que rellenan el rombo y dejan canales de fondo de anchura `gap` con un rombo
+  menor en cada hueco), `celosia` y `reticula` (`cuadros`, `lineas`, `cruces`, `damero`;
+  `inner`).
+  `celosia` no usa `tile`: dibuja las rectas `x ± y = c` de lado a lado con `build`. Las
+  constantes `c` se anclan en el centro de la carta (`line_constants`), de modo que el
+  espejo intercambia las dos familias y deja el conjunto invariante; `geometry.diagonal_segment`
+  recorta cada recta al campo.
 - `floral.py`: `rosetas` (`roseta`, `estrella`, `anillos`, `mosaico`), `arabescos`
   (`volutas`, `ogivas`).
 - `curved.py`: `ondas` (`circulos`, `escamas`, `sinuoso`), `guilloche` (`rosetones`, `haces`).

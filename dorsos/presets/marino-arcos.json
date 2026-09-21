@@ -1,0 +1,48 @@
+{
+  "palette": {
+    "background": "#20395c",
+    "primary": "#f2f4f8",
+    "secondary": "#f2f4f8",
+    "accent": "#f2f4f8",
+    "paper": "#f7f5f0"
+  },
+  "style": {
+    "margin_mm": 2.2,
+    "line_width_mm": 0.26,
+    "corner_radius_mm": 3.2
+  },
+  "frame": {
+    "kind": "ornamentado",
+    "options": {
+      "motif": "arcos",
+      "band_mm": 4.8,
+      "unit_ratio": 1.0,
+      "fill": "background",
+      "inset_mm": 1.2,
+      "pad_mm": 0.8,
+      "outer_weight": 1.4,
+      "inner_weight": 1.4,
+      "petals": 8
+    }
+  },
+  "pattern": {
+    "kind": "rombos",
+    "options": {
+      "style": "macizo",
+      "cell_mm": 4.4,
+      "gap": 0.34
+    }
+  },
+  "medallion": {
+    "kind": "rombo",
+    "options": {
+      "interior": "flor",
+      "size": 0.5,
+      "petals": 4,
+      "rings": 2,
+      "fill": "background",
+      "beads": false,
+      "halo_mm": 0.0
+    }
+  }
+}

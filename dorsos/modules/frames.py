@@ -7,7 +7,7 @@ a lo largo del lado y ``v`` desde el borde exterior (0) al interior (``t``).
 """
 import math
 
-from ..geometry import Affine, Rect, lens, rect_outline
+from ..geometry import Affine, Rect, arc, lens, rect_outline
 from ..primitives import circle, line, poly, transform_all
 from ..registry import register
 from .base import FrameResult, Module, Opt
@@ -39,7 +39,9 @@ class LineFrame(Frame):
         last = self.line_specs(o)[-1][1]
         inner = base.inset(last + o["pad_mm"])
         inner_pts = rect_outline(inner, o["corner"], self.radius_at(o, last + o["pad_mm"]))
-        return FrameResult(prims, self.field_outline(ctx.field), inner_pts, inner)
+        field = self.field_outline(ctx.field)
+        area = (field, ctx.field) if o["bleed"] else None
+        return FrameResult(prims, field, inner_pts, inner, area)
 
     @staticmethod
     def radius_at(o, offset):
@@ -57,6 +59,7 @@ _LINE_OPTIONS = {
     "pad_mm": Opt(0.9, "aire entre el marco y el interior", lo=0.0, hi=4.0),
     "corner": Opt("redondo", "forma de las esquinas", choices=CORNERS),
     "radius_mm": Opt(2.4, "tamaño de la esquina", lo=0.5, hi=6.0, rlo=1.5, rhi=3.5),
+    "bleed": Opt(False, "el patrón llena todo el campo y las líneas se dibujan encima"),
 }
 
 
@@ -188,9 +191,10 @@ class GeometricFrame(BandFrame):
 
 @register("frame", "ornamentado")
 class OrnamentedFrame(BandFrame):
-    doc = "Banda con festones, perlas, hojas o cadeneta y una roseta en cada esquina."
+    doc = "Banda con festones, perlas, hojas, cadeneta o arcos, y una roseta en cada esquina."
     options = {**_BAND_OPTIONS,
-               "motif": Opt("festones", "motivo de la banda", choices=("festones", "perlas", "hojas", "cadeneta")),
+               "motif": Opt("festones", "motivo de la banda",
+                            choices=("festones", "perlas", "hojas", "cadeneta", "arcos")),
                "band_mm": Opt(4.2, "ancho de la banda", lo=2.0, hi=8.0, rlo=3.6, rhi=5.0),
                "unit_ratio": Opt(1.2, "largo de cada motivo respecto del ancho", lo=0.6, hi=2.5, rlo=1.0, rhi=1.5),
                "petals": Opt(8, "pétalos de la roseta de esquina", lo=6, hi=12)}
@@ -223,6 +227,24 @@ class OrnamentedFrame(BandFrame):
                 circle(u, t / 2, r, stroke=c, width=ctx.weight(1.0)),
                 circle(u / 2, t / 2, r, stroke=c, width=ctx.weight(1.0)),
                 circle(u / 2, t / 2, r * 0.3, fill=a)]
+
+    def motif_arcos(self, ctx, u, t):
+        """Arcada con un anillo sobre cada arco y una lanza entre arcos."""
+        c, a = ctx.color(self.o["color"]), ctx.color(self.o["accent"])
+        w = ctx.weight(1.3)
+        cy, r = t * 0.68, min(u * 0.42, t * 0.36)
+        curl = r * 0.28
+        ring = t * 0.12
+        out = [line(arc(u / 2, cy, r, math.pi, 2 * math.pi), c, w)]
+        for side in (-1, 1):  # las patas del arco se enroscan hacia fuera
+            start = 0.0 if side < 0 else math.pi
+            out.append(line(arc(u / 2 + side * (r + curl), cy, curl, start, math.pi / 2), c, w))
+        out.append(circle(u / 2, cy - r - ring * 1.15, ring, stroke=c, width=w))
+        out.append(circle(u / 2, cy - r - ring * 1.15, ring * 0.34, fill=a))
+        # lanza entre arcos: punta, barbas cortas y astil fino
+        out.append(poly([(0, t * 0.12), (u * 0.045, t * 0.40), (u * 0.013, t * 0.40), (u * 0.013, t * 0.9),
+                         (-u * 0.013, t * 0.9), (-u * 0.013, t * 0.40), (-u * 0.045, t * 0.40)], fill=c))
+        return out
 
     def corner_motif(self, ctx, t):
         c, a, f = ctx.color(self.o["color"]), ctx.color(self.o["accent"]), ctx.color(self.o["fill"])

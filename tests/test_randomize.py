@@ -53,3 +53,41 @@ def test_random_configs_are_valid_and_serializable():
     for seed in range(100):
         cfg = randomize(base, seed)
         assert DorsoConfig.from_json(cfg.to_json(full=True)).to_dict(full=True) == cfg.to_dict(full=True)
+
+
+def test_layers_randomize_only_the_chosen_ones():
+    base = DorsoConfig.from_dict({"palette": {"background": "#123456"}, "frame": {"kind": "ornamentado"},
+                                  "pattern": {"kind": "rombos"}, "medallion": {"kind": "rombo"}})
+    patterns = set()
+    for seed in range(40):
+        cfg = randomize(base, seed, layers=["pattern"])
+        assert cfg.palette == base.palette
+        assert cfg.frame.kind == "ornamentado" and cfg.medallion.kind == "rombo"
+        assert cfg.style == base.style
+        patterns.add(cfg.pattern.kind)
+    assert len(patterns) > 1
+
+
+def test_several_layers_at_once():
+    base = DorsoConfig.from_dict({"frame": {"kind": "ornamentado"}, "corners": {"kind": "abanico"}})
+    for seed in range(20):
+        cfg = randomize(base, seed, layers=["palette", "pattern", "medallion"])
+        assert cfg.frame.kind == "ornamentado" and cfg.corners.kind == "abanico"
+
+
+def test_no_layers_given_randomizes_everything():
+    base = DorsoConfig.from_dict({"frame": {"kind": "ornamentado"}})
+    frames = {randomize(base, s).frame.kind for s in range(40)}
+    assert len(frames) > 1
+
+
+def test_unknown_layer_is_an_error():
+    with pytest.raises(ConfigError):
+        randomize(DorsoConfig(), 1, layers=["patron"])
+
+
+def test_lock_still_applies_inside_a_randomized_layer():
+    base = DorsoConfig.from_dict({"pattern": {"kind": "celosia"}})
+    for seed in range(20):
+        cfg = randomize(base, seed, lock=["pattern.kind"], layers=["pattern"])
+        assert cfg.pattern.kind == "celosia"
