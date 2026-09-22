@@ -116,6 +116,10 @@ bloqueo, que es cómo `--random pattern` deja el resto intacto. No toca `format`
 ### `sheet.py`
 `contact_sheet(items, cols, card_height_px)` → imagen con las cartas en cuadrícula y su
 etiqueta. Renderiza cada carta con el dpi que da esa altura.
+`catalog(slot)` → una `(etiqueta, DorsoConfig)` por cada módulo de la ranura y por cada valor
+de su opción de variante (`style` o `motif`), sobre un fondo neutro (`CATALOG_BASE`). Las
+variantes que un módulo declara en `mirror_free` (solo simetría de giro) se enseñan con
+`bilateral` apagado.
 
 ### `cli.py`
 Subcomandos `generate`, `sheet`, `presets`, `modules`. `base_dict(args)` mezcla defecto →
@@ -142,7 +146,26 @@ Todos derivan de `modules/base.Module` y se registran con `@register(ranura, nom
   Las propiedades `pattern_clip` y `pattern_rect` resuelven ese valor por defecto.
 
 ### `modules/motifs.py`
-Piezas reutilizables: `petals`, `rosette`, `star`, `ring_of_dots`, `disc`.
+Piezas reutilizables: `petals`, `rosette`, `star`, `ring_of_dots`, `disc`,
+`fleur_de_lis` (todas sus piezas arrancan de la franja central, para que se lea entera también
+grande y girada) y `flared_cross` (cruz paté).
+
+### `modules/keys.py` — grecas
+Trazado de la greca griega, compartido por el patrón `greca` y los marcos de greca.
+- `Key(path, period, height, axis)`: línea central de un módulo en unidades de rejilla, de
+  centro de celda a centro de celda. El último punto es el primero del módulo siguiente,
+  así que encadenarlos da una greca continua. `axis` es la recta vertical respecto de la
+  que el módulo es simétrico (solo el almenado la tiene); `band_units` = `height + 4`.
+- `KEYS`: `meandro` (10 × 9, la greca clásica de doble espiral), `olas` (6 × 5) y
+  `almenado` (8 × 5).
+- `key_rects` y `band_rects`: cada tramo como un rectángulo de una unidad de grueso, lo que
+  deja las esquinas en ángulo recto; `band_rects` añade los raíles.
+- Espiral: `spiral_arm(X, Y)` da un brazo que gira hacia dentro y avanza cuatro unidades
+  por vuelta (trazo, hueco y el hueco que ocupa el otro brazo); `spiral_paths` añade el
+  segundo brazo girado 180° y, si el primero acaba sobre el eje vertical
+  (`joins_through_centre`), funde los dos últimos tramos en una barra central: un solo
+  trazo en S. `fitted_spiral` elige el tamaño que cabe y se une así, a costa de hasta tres
+  unidades de ancho y una de alto. `path_rects` pasa una línea central a rectángulos.
 
 ### `modules/frames.py` — ranura `frame`
 `Frame.build(ctx) -> FrameResult`. `LineFrame` (`simple`, `doble`): rectángulo(s)
@@ -151,8 +174,11 @@ concéntrico(s) con esquina `recto|redondo|cortado|concavo`. Su opción `bleed` 
 recortarse al interior del marco. `BandFrame` (`geometrico`,
 `ornamentado`): banda de ancho `band_mm` con un motivo repetido; cada lado se recorre en
 coordenadas locales `(u, v)` y se lleva a la página con una rotación (`BandFrame.sides`).
-Los motivos son métodos `motif_<nombre>(ctx, unidad, ancho)`; `corner_motif` dibuja los
-bloques de esquina. Bucles: por lado, por unidad de motivo. `motif_arcos` es la arcada con
+Los motivos son métodos `motif_<nombre>(ctx, unidad, ancho)`; `corner_motif` dibuja el
+bloque de la esquina de arriba a la izquierda y las otras tres son sus reflejos, así que un
+motivo con sentido (el raíl en L de la greca) mira hacia fuera en las cuatro. `unit_count`
+decide cuántas unidades caben en un lado: `GeometricFrame` lo sobrescribe para las grecas,
+que imponen su proporción y un número par de módulos (el centro del lado cae entre dos). Bucles: por lado, por unidad de motivo. `motif_arcos` es la arcada con
 un anillo sobre cada arco y una lanza entre arcos.
 
 ### `modules/patterns/` — ranura `pattern`

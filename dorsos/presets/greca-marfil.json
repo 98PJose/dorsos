@@ -1,0 +1,9 @@
+{
+  "palette": {"background": "#f4efe3", "primary": "#1f2a44", "secondary": "#c9bfa6", "accent": "#a8322d", "paper": "#ffffff"},
+  "style": {"margin_mm": 2.4, "line_width_mm": 0.26},
+  "frame": {"kind": "geometrico", "options": {"motif": "greca", "band_mm": 6.0, "fill": "background",
+                                              "inset_mm": 0.8, "pad_mm": 1.0, "outer_weight": 1.0, "inner_weight": 1.0}},
+  "pattern": {"kind": "celosia", "options": {"style": "puntos", "cell_mm": 4.6, "fill": "secondary"}},
+  "medallion": {"kind": "octogono", "options": {"interior": "octograma", "size": 0.42, "fill": "background",
+                                                "beads": false, "rings": 2}}
+}

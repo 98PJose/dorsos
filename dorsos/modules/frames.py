@@ -7,10 +7,11 @@ a lo largo del lado y ``v`` desde el borde exterior (0) al interior (``t``).
 """
 import math
 
-from ..geometry import Affine, Rect, arc, lens, rect_outline
+from ..geometry import Affine, Rect, arc, ellipse_points, lens, rect_outline, spiral
 from ..primitives import circle, line, poly, transform_all
 from ..registry import register
 from .base import FrameResult, Module, Opt
+from .keys import KEYS, band_rects
 from .motifs import rosette
 
 CORNERS = ("recto", "redondo", "cortado", "concavo")
@@ -95,15 +96,18 @@ class BandFrame(Frame):
         inner = outer.inset(t)
         prims = []
         for side, length in self.sides(outer, t):
-            n = max(1, round(length / (t * o["unit_ratio"])))
+            n = self.unit_count(length, t)
             unit = length / n
             prims.append(self._transformed_rect(side, length, t, fill))
             for k in range(n):
                 shift = Affine.translate(k * unit, 0).then(side)
                 prims += transform_all(self.motif(ctx, unit, t), shift)
-        for cx0, cy0 in ((outer.x0, outer.y0), (outer.x1 - t, outer.y0), (outer.x1 - t, outer.y1 - t), (outer.x0, outer.y1 - t)):
-            prims.append(poly([(cx0, cy0), (cx0 + t, cy0), (cx0 + t, cy0 + t), (cx0, cy0 + t)], fill=fill))
-            prims += transform_all(self.corner_motif(ctx, t), Affine.translate(cx0, cy0))
+        # Cada esquina es la de arriba a la izquierda reflejada: así un motivo con sentido
+        # (el raíl en L de la greca) mira hacia fuera en las cuatro.
+        for place in (Affine.translate(outer.x0, outer.y0), Affine(-1, 0, 0, 1, outer.x1, outer.y0),
+                      Affine(-1, 0, 0, -1, outer.x1, outer.y1), Affine(1, 0, 0, -1, outer.x0, outer.y1)):
+            prims.append(poly([place(p) for p in ((0, 0), (t, 0), (t, t), (0, t))], fill=fill))
+            prims += transform_all(self.corner_motif(ctx, t), place)
         prims.append(poly(outer.corners(), stroke=line_color, width=ctx.weight(o["outer_weight"])))
         prims.append(poly(inner.corners(), stroke=line_color, width=ctx.weight(o["inner_weight"])))
         pad_rect = inner.inset(o["pad_mm"])
@@ -122,6 +126,10 @@ class BandFrame(Frame):
     @staticmethod
     def _transformed_rect(side, length, t, fill):
         return poly([side(p) for p in ((0, 0), (length, 0), (length, t), (0, t))], fill=fill)
+
+    def unit_count(self, length, t):
+        """Cuántas veces cabe el motivo a lo largo de un lado."""
+        return max(1, round(length / (t * self.o["unit_ratio"])))
 
     def motif(self, ctx, unit, t):
         return getattr(self, "motif_" + self.o["motif"])(ctx, unit, t)
@@ -143,9 +151,14 @@ _BAND_OPTIONS = {
 
 @register("frame", "geometrico")
 class GeometricFrame(BandFrame):
-    doc = "Banda con un motivo geométrico repetido: rombos, dientes, cuadros, puntos o escalones."
+    doc = ("Banda con un motivo geométrico repetido: rombos, dientes, cuadros, puntos, escalones, "
+           "ajedrez o greca griega (greca, greca_simple, almenas).")
+    # Motivos de greca y la llave de ``keys`` que dibuja cada uno.
+    KEY_MOTIFS = {"greca": "meandro", "greca_simple": "olas", "almenas": "almenado"}
     options = {**_BAND_OPTIONS,
-               "motif": Opt("rombos", "motivo de la banda", choices=("rombos", "dientes", "cuadros", "puntos", "escalones")),
+               "motif": Opt("rombos", "motivo de la banda",
+                            choices=("rombos", "dientes", "cuadros", "puntos", "escalones", "ajedrez",
+                                     *KEY_MOTIFS)),
                "band_mm": Opt(3.4, "ancho de la banda", lo=1.5, hi=7.0, rlo=2.6, rhi=4.2),
                "unit_ratio": Opt(1.0, "largo de cada motivo respecto del ancho", lo=0.5, hi=2.5, rlo=0.8, rhi=1.4)}
 
@@ -183,18 +196,69 @@ class GeometricFrame(BandFrame):
             right += [(u / 2 + w * u, y0), (u / 2 + w * u, y1)]
         return [poly(left + right[::-1], fill=c)]
 
+    def motif_ajedrez(self, ctx, u, t):
+        c = ctx.color(self.o["color"])
+        return [poly(_box(0, 0, u / 2, t / 2), fill=c), poly(_box(u / 2, t / 2, u, t), fill=c)]
+
+    # --- greca -----------------------------------------------------------------------
+
+    def key(self):
+        name = self.KEY_MOTIFS.get(self.o["motif"])
+        return KEYS[name] if name else None
+
+    def unit_count(self, length, t):
+        key = self.key()
+        if key is None:
+            return super().unit_count(length, t)
+        # La greca impone su proporción (celdas cuadradas) y un número par de módulos, para
+        # que el centro del lado caiga entre dos y el espejo no parta uno por la mitad.
+        n = max(2, round(length / (t * key.period / key.band_units)))
+        return n + n % 2
+
+    def motif_greca(self, ctx, u, t):
+        return self.key_motif(ctx, u, t)
+
+    motif_greca_simple = motif_almenas = motif_greca
+
+    def key_motif(self, ctx, unit, t):
+        """Un módulo de greca con sus raíles; la rejilla se estira lo justo para cuadrar el lado."""
+        key = self.key()
+        uy, ux = t / key.band_units, unit / key.period
+        # Con el eje propio desplazado, el último módulo no llegaría al final del lado:
+        # se dibuja también el siguiente, y lo que sobra lo tapa la esquina.
+        copies = 2 if key.axis else 1
+        return [poly(r, fill=ctx.color(self.o["color"]))
+                for r in band_rects(key, -key.axis * ux, 0, ux, uy, copies)]
+
     def corner_motif(self, ctx, t):
         c, a = ctx.color(self.o["color"]), ctx.color(self.o["accent"])
+        if self.key():
+            return self.key_corner(t, c)
         return [poly([(t / 2, t * 0.1), (t * 0.9, t / 2), (t / 2, t * 0.9), (t * 0.1, t / 2)], fill=c),
                 circle(t / 2, t / 2, t * 0.16, fill=a)]
+
+    def key_corner(self, t, color):
+        """Raíles en L que doblan la esquina y cuadrados concéntricos al ritmo de la greca."""
+        uy = t / self.key().band_units
+        rects = [_box(0, 0, t, uy), _box(0, 0, uy, t), _box(t - uy, t - uy, t, t)]
+        lo, hi = 2 * uy, t - 2 * uy
+        while hi - lo > 1.5 * uy:
+            rects += [_box(lo, lo, hi, lo + uy), _box(lo, hi - uy, hi, hi),
+                      _box(lo, lo, lo + uy, hi), _box(hi - uy, lo, hi, hi)]
+            lo, hi = lo + 2 * uy, hi - 2 * uy
+        if hi - lo > 0.5 * uy:
+            rects.append(_box(lo, lo, hi, hi))
+        return [poly(r, fill=color) for r in rects]
 
 
 @register("frame", "ornamentado")
 class OrnamentedFrame(BandFrame):
-    doc = "Banda con festones, perlas, hojas, cadeneta o arcos, y una roseta en cada esquina."
+    doc = ("Banda con festones, perlas, hojas, cadeneta, arcos, ovas, postas, cordón o palmetas, "
+           "y una roseta en cada esquina.")
     options = {**_BAND_OPTIONS,
                "motif": Opt("festones", "motivo de la banda",
-                            choices=("festones", "perlas", "hojas", "cadeneta", "arcos")),
+                            choices=("festones", "perlas", "hojas", "cadeneta", "arcos",
+                                     "ovas", "postas", "cordon", "palmetas")),
                "band_mm": Opt(4.2, "ancho de la banda", lo=2.0, hi=8.0, rlo=3.6, rhi=5.0),
                "unit_ratio": Opt(1.2, "largo de cada motivo respecto del ancho", lo=0.6, hi=2.5, rlo=1.0, rhi=1.5),
                "petals": Opt(8, "pétalos de la roseta de esquina", lo=6, hi=12)}
@@ -246,6 +310,52 @@ class OrnamentedFrame(BandFrame):
                          (-u * 0.013, t * 0.9), (-u * 0.013, t * 0.40), (-u * 0.045, t * 0.40)], fill=c))
         return out
 
+    def motif_ovas(self, ctx, u, t):
+        """Ovas y dardos: un huevo en su cáscara abierta por arriba y un dardo entre cada dos."""
+        c = ctx.color(self.o["color"])
+        w = ctx.weight(1.5)
+        cx, cy = u / 2, t * 0.48
+        shell = ellipse_points(cx, cy, u * 0.36, t * 0.4, -0.25, math.pi + 0.25)
+        dart = [(0, t * 0.95), (u * 0.075, t * 0.5), (u * 0.03, t * 0.42), (0, t * 0.1),
+                (-u * 0.03, t * 0.42), (-u * 0.075, t * 0.5)]
+        return [poly(ellipse_points(cx, cy + t * 0.02, u * 0.22, t * 0.3), fill=c), line(shell, c, w),
+                poly(dart, fill=c)]
+
+    def motif_postas(self, ctx, u, t):
+        """Onda vitruviana: la línea corre por abajo y cada ola se enrosca hacia atrás."""
+        c = ctx.color(self.o["color"])
+        w = ctx.weight(1.4)
+        base = t * 0.82
+        r = min(u * 0.34, t * 0.34)
+        cx, cy = u * 0.62, base - r
+        return [line([(0, base), (cx, base)], c, w),
+                line(spiral(cx, cy, r, r * 0.22, math.pi / 2, 1.15, direction=-1), c, w)]
+
+    def motif_cordon(self, ctx, u, t):
+        """Cordón trenzado: hebras inclinadas que montan sobre la siguiente, como una cuerda."""
+        c, f = ctx.color(self.o["color"]), ctx.color(self.o["fill"])
+        w = ctx.weight(1.1)
+        strand = lens((-u * 0.3, t * 0.94), (u * 1.3, t * 0.06), t * 0.24)
+        return [poly(strand, fill=c, stroke=f, width=w),
+                line([(u * 0.15, t * 0.66), (u * 0.85, t * 0.34)], f, w * 0.7)]
+
+    def motif_palmetas(self, ctx, u, t):
+        """Palmeta: abanico de cinco hojas hacia el borde exterior, con un botón entre cada dos."""
+        c, a = ctx.color(self.o["color"]), ctx.color(self.o["accent"])
+        base = (u / 2, t * 0.84)
+        out = []
+        for k in range(5):
+            ang = math.radians(-90 + (k - 2) * 26)
+            tip = (base[0] + t * 0.7 * math.cos(ang), base[1] + t * 0.7 * math.sin(ang))
+            out.append(poly(lens(base, tip, t * 0.07), fill=c))
+        out.append(circle(base[0], base[1], t * 0.09, fill=a))
+        out.append(circle(0, t * 0.5, t * 0.07, fill=c))
+        return out
+
     def corner_motif(self, ctx, t):
         c, a, f = ctx.color(self.o["color"]), ctx.color(self.o["accent"]), ctx.color(self.o["fill"])
         return rosette(t / 2, t / 2, t * 0.46, self.o["petals"], f, c, ctx.weight(0.9), dot=a, ring=c)
+
+
+def _box(x0, y0, x1, y1):
+    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]

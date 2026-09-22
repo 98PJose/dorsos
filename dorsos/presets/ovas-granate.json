@@ -1,0 +1,8 @@
+{
+  "palette": {"background": "#6e1423", "primary": "#f3e6c8", "secondary": "#4a0d17", "accent": "#d4a94a", "paper": "#f7f1e3"},
+  "style": {"margin_mm": 2.6, "line_width_mm": 0.26},
+  "frame": {"kind": "ornamentado", "options": {"motif": "ovas", "band_mm": 4.8}},
+  "pattern": {"kind": "damasco", "options": {"style": "flor", "cell_mm": 8.0}},
+  "medallion": {"kind": "hexagono", "options": {"interior": "sol", "size": 0.5}},
+  "corners": {"kind": "lis", "options": {"size_mm": 9.0}}
+}

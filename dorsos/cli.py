@@ -14,7 +14,7 @@ from .randomize import LAYERS, randomize
 from .registry import get_module, kinds
 from .render_png import render_png, save_png
 from .render_svg import render_svg
-from .sheet import contact_sheet
+from .sheet import catalog, contact_sheet
 
 DEFAULT_OUT_DIR = "salida"
 
@@ -98,7 +98,9 @@ def cmd_generate(args):
 
 
 def cmd_sheet(args):
-    if args.presets:
+    if args.catalog:
+        items = catalog(args.catalog)
+    elif args.presets:
         items = [(name, DorsoConfig.from_dict(_with_overrides(args, load_preset(name)))) for name in preset_names()]
     else:
         items = [(f"seed {cfg.seed}", cfg) for _, cfg in configs_from_args(_as_random(args), args.count)]
@@ -156,6 +158,7 @@ def build_parser():
     add_config_args(s)
     s.add_argument("-o", "--out", default=f"{DEFAULT_OUT_DIR}/muestras.png")
     s.add_argument("--presets", action="store_true", help="todos los presets (si no, dorsos aleatorios)")
+    s.add_argument("--catalog", choices=SLOTS, help="una carta por cada variante de esa ranura")
     s.add_argument("--count", type=int, default=12, help="dorsos aleatorios de la hoja")
     s.add_argument("--cols", type=int, default=6)
     s.add_argument("--height", type=int, default=420, help="alto en píxeles de cada carta")

@@ -1,9 +1,10 @@
 """Patrones por bandas: espiga, greca griega y trenzados.
 
 Las filas se anclan en el centro del campo, igual que las retículas. Las bandas de la
-espiga y de la greca tienen sentido (suben hacia un lado), así que el espejo del dominio
-fundamental las encuentra consigo mismas en el eje y forma una punta de flecha, como en un
-parqué real.
+espiga y de la greca tienen sentido (avanzan hacia un lado), así que el espejo del dominio
+fundamental las encuentra consigo mismas en el eje: la espiga forma una punta de flecha,
+como en un parqué, y la greca dos llaves que se alejan del centro. Los módulos de la greca
+se anclan en el eje para que ese encuentro caiga entre dos módulos y no parta uno.
 """
 import math
 
@@ -11,6 +12,7 @@ from ...geometry import box, diagonal_segment
 from ...primitives import line, poly
 from ...registry import register
 from ..base import Opt
+from ..keys import KEYS, fitted_spiral, key_rects, path_rects, spiral_paths
 from .base import Lattice, Pattern, diagonal_constants, rows
 
 
@@ -68,43 +70,57 @@ class Espiga(Pattern):
 
 @register("pattern", "greca")
 class Greca(Pattern):
-    doc = "Greca griega: meandro, onda corrida o almenado, en bandas continuas."
+    doc = ("Greca griega: bandas con raíles (meandro, onda corrida o almenado) o una sola "
+           "greca que se enrosca hasta el centro (espiral).")
     options = {**Pattern.common,
-               "cell_mm": Opt(8.0, "ancho de cada módulo", lo=4.0, hi=20.0, rand=False),
-               "style": Opt("meandro", "variante", choices=("meandro", "olas", "almenado"))}
-
-    # Cada módulo es una espiral abierta de ``u`` en ``u``, con un raíl continuo al pie.
-    # Se dibujan abiertas y colgando del raíl a propósito: un módulo cerrado de cuatro
-    # brazos recuerda demasiado a una esvástica.
-    SPIRALS = {
-        "meandro": [(0, 4), (0, 0), (3, 0), (3, 3), (1, 3), (1, 1), (2, 1)],
-        "olas": [(0, 4), (0, 0), (2, 0), (2, 2), (1, 2)],
-    }
-    # El almenado no cuelga de un raíl: es una onda cuadrada que enlaza con la del módulo
-    # siguiente, así que se dibuja como una sola polilínea por fila.
-    MERLON = [(0, 4), (0, 0), (2, 0), (2, 4), (4, 4)]
+               "cell_mm": Opt(7.0, "ancho de cada módulo", lo=3.0, hi=20.0, rand=False),
+               "style": Opt("meandro", "variante", choices=(*KEYS, "espiral"))}
+    mirror_free = ("espiral",)  # solo simetría de giro: con espejo deja de ser una espiral
 
     def build(self, ctx):
         o = self.o
         field = ctx.field
-        s = Lattice(field, o["cell_mm"] * ctx.scale).s
-        u = s / 4
-        w = ctx.weight(o["weight"]) * 1.8
+        if o["style"] == "espiral":
+            return self.spiral(ctx)
+        key = KEYS[o["style"]]
+        period = Lattice(field, o["cell_mm"] * ctx.scale).s  # un número entero de módulos cubre el ancho
+        u = period / key.period
+        row = (key.band_units - 1) * u  # las filas comparten raíl: raíl, hueco, llave, hueco
         prims = []
-        for j, y in rows(field, s):
+        # Un raíl centrado en el eje horizontal: el giro de 180° lo deja en su sitio.
+        top = field.cy - u / 2
+        j0 = math.floor((field.y0 - top) / row) - 1
+        j1 = math.ceil((field.y1 - top) / row) + 1
+        k0 = math.floor((field.x0 - field.cx) / period) - 1
+        count = math.ceil((field.x1 - field.cx) / period) + 2 - k0
+        for j in range(j0, j1 + 1):
             color, _, _ = self.cell_colors(ctx, 0, j)
-            flip = j % 2 == 1  # filas alternas en sentido contrario
-            ks = range(math.floor((field.x0 - field.cx) / s) - 1, math.ceil((field.x1 - field.cx) / s) + 2)
-            def place(a, b, k):
-                x = field.cx + k * s
-                return (x + (s - a * u if flip else a * u), y + b * u)
-            if o["style"] == "almenado":
-                prims.append(line([place(a, b, k) for k in ks for a, b in self.MERLON[:-1]], color, w))
-                continue
-            prims.append(line([(field.x0, y + 4 * u), (field.x1, y + 4 * u)], color, w))
-            for k in ks:
-                prims.append(line([place(a, b, k) for a, b in self.SPIRALS[o["style"]]], color, w))
+            y = top + j * row
+            x = field.cx + k0 * period - key.axis * u
+            prims.append(poly(box_between(field.x0 - period, y, field.x1 + period, y + u), fill=color))
+            prims += [poly(r, fill=color) for r in key_rects(key, x, y + 2 * u, u, u, count)]
         return prims
+
+
+    def spiral(self, ctx):
+        """Espiral doble hasta el centro. ``cell_mm`` es la distancia entre dos vueltas del
+        mismo brazo, que son cuatro unidades: trazo, hueco, trazo del otro brazo y hueco.
+
+        Solo tiene simetría de giro, no de espejo: una espiral gira en un sentido y su imagen
+        especular en el otro. Con ``symmetry.bilateral`` activo, el espejo global la convierte
+        en rectángulos concéntricos.
+        """
+        o = self.o
+        field = ctx.field
+        u = o["cell_mm"] * ctx.scale / 4
+        X, Y = fitted_spiral(field.w / 2 / u, field.h / 2 / u)
+        color = ctx.color(o["line"])
+        return [poly(r, fill=color) for path in spiral_paths(X, Y)
+                for r in path_rects(path, field.cx, field.cy, u, u)]
+
+
+def box_between(x0, y0, x1, y1):
+    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
 
 @register("pattern", "entrelazo")

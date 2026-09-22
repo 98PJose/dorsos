@@ -1,13 +1,19 @@
-"""Medallones centrales: contorno (círculo, óvalo, rombo, roseta, estrella, cuatrilóbulo) + motivo interior."""
+"""Medallones centrales: contorno + motivo interior.
+
+Solo formas y motivos sin sentido arriba-abajo: el medallón cruza los dos ejes de la carta,
+así que el espejo global duplicaría del revés cualquier cosa con orientación (un escudo, una
+flor de lis).
+"""
 import math
 
-from ..geometry import circle_points, diamond, star_polygon, union_of_circles
+from ..geometry import TAU, circle_points, diamond, regular_polygon, star_polygon, union_of_circles
 from ..primitives import circle, poly
 from ..registry import register
 from .base import Module, Opt
-from .motifs import petals, rosette, star
+from .motifs import flared_cross, petals, rosette, star
 
-INTERIORS = ("roseta", "estrella", "rombo", "circulo", "flor", "ninguno")
+INTERIORS = ("roseta", "estrella", "rombo", "circulo", "flor", "sol", "cruz", "octograma", "anillos",
+             "ninguno")
 
 
 class Medallion(Module):
@@ -74,7 +80,31 @@ class Medallion(Module):
             return (petals(cx, cy, r * 0.15, r, n, ln, fl, w, bulge=0.35)
                     + petals(cx, cy, r * 0.1, r * 0.55, n, dt, fl, w, rot=-math.pi / 2 + math.pi / n, bulge=0.35)
                     + [circle(cx, cy, r * 0.12, fill=fl)])
+        if kind == "sol":
+            return self.sun(cx, cy, r, 2 * n, ln, dt, w)
+        if kind == "cruz":
+            return [poly(flared_cross(cx, cy, r, r * 0.22, r * 0.5), fill=ln), circle(cx, cy, r * 0.2, fill=dt)]
+        if kind == "octograma":
+            return [poly(star_polygon(cx, cy, r, r * 0.765, 8), fill=ln),
+                    poly(regular_polygon(cx, cy, r * 0.52, 8, rot=math.pi / 8), fill=fl),
+                    circle(cx, cy, r * 0.2, fill=dt)]
+        if kind == "anillos":
+            return [circle(cx, cy, r * k / 4, stroke=ln, width=w * 1.3) for k in range(2, 5)] + \
+                   [circle(cx, cy, r * 0.22, fill=dt)]
         return []
+
+    @staticmethod
+    def sun(cx, cy, r, rays, ln, dt, w):
+        """Sol: rayos en cuña alrededor de un disco."""
+        half = math.pi / rays * 0.55
+        out = []
+        for k in range(rays):
+            a = -math.pi / 2 + TAU * k / rays
+            base = r * 0.34
+            out.append(poly([(cx + base * math.cos(a - half), cy + base * math.sin(a - half)),
+                             (cx + r * math.cos(a), cy + r * math.sin(a)),
+                             (cx + base * math.cos(a + half), cy + base * math.sin(a + half))], fill=ln))
+        return out + [circle(cx, cy, r * 0.3, fill=ln), circle(cx, cy, r * 0.2, fill=dt)]
 
 
 @register("medallion", "circulo")
@@ -133,3 +163,30 @@ class MedallionStar(Medallion):
 
     def unit_outline(self):
         return star_polygon(0, 0, 1.0, 0.72, self.o["petals"])
+
+
+@register("medallion", "octogono")
+class MedallionOctagon(Medallion):
+    doc = "Medallón octogonal, con un lado arriba."
+    options = {**Medallion.common, "aspect": Opt(1.0, "alto / ancho", lo=0.7, hi=1.6, rand=False)}
+
+    def unit_outline(self):
+        return regular_polygon(0, 0, 1.0 / math.cos(math.pi / 8), 8, rot=math.pi / 8)
+
+
+@register("medallion", "hexagono")
+class MedallionHexagon(Medallion):
+    doc = "Medallón hexagonal, con un vértice arriba."
+    options = {**Medallion.common, "aspect": Opt(1.0, "alto / ancho", lo=0.7, hi=1.6, rand=False)}
+
+    def unit_outline(self):
+        return regular_polygon(0, 0, 1.0 / math.cos(math.pi / 6), 6)
+
+
+@register("medallion", "cruz")
+class MedallionCross(Medallion):
+    doc = "Medallón en cruz paté, de brazos ensanchados."
+    options = {**Medallion.common, "aspect": Opt(1.0, "alto / ancho", lo=0.7, hi=1.6, rand=False)}
+
+    def unit_outline(self):
+        return flared_cross(0, 0, 1.0, 0.36, 0.62)

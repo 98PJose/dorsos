@@ -1,12 +1,12 @@
 """Teselados: panal hexagonal y lacería mudéjar."""
 import math
 
-from ...geometry import TAU, box, diamond, regular_polygon, star_polygon
+from ...geometry import box, diamond, regular_polygon, star_polygon
 from ...primitives import circle, poly
 from ...registry import register
 from ..base import Opt
 from ..motifs import rosette
-from .base import Lattice, Pattern, StaggeredLattice
+from .base import Pattern, StaggeredLattice
 
 HEX_ROW_RATIO = math.sqrt(3) / 2  # separación entre filas de un panal de ancho 1
 

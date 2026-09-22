@@ -54,3 +54,9 @@ def test_sheet(tmp_path):
 def test_presets_and_modules_listing(capsys):
     assert main(["presets"]) == 0 and main(["modules", "frame"]) == 0
     assert "geometrico" in capsys.readouterr().out
+
+
+def test_sheet_catalog(tmp_path):
+    out = tmp_path / "c.png"
+    assert main(["sheet", "--catalog", "corners", "--cols", "3", "--height", "100", "-o", str(out)]) == 0
+    assert out.exists()

@@ -1,0 +1,7 @@
+{
+  "palette": {"background": "#1d3557", "primary": "#f1e9d2", "secondary": "#1d3557", "accent": "#e0b04a", "paper": "#f7f3ea"},
+  "symmetry": {"bilateral": false, "rotational_180": true},
+  "style": {"margin_mm": 2.6, "line_width_mm": 0.28},
+  "frame": {"kind": "doble", "options": {"corner": "recto", "outer_weight": 2.4, "inner_weight": 1.2, "gap_mm": 0.8}},
+  "pattern": {"kind": "greca", "options": {"style": "espiral"}}
+}

@@ -1,11 +1,11 @@
 """Patrones florales y de arabescos: rosetas y arabescos (volutas, ogivas)."""
 import math
 
-from ...geometry import Affine, TAU, arc, box, diamond, lens, spiral
+from ...geometry import Affine, TAU, arc, diamond, lens, spiral
 from ...primitives import circle, line, poly, transform_all
 from ...registry import register
 from ..base import Opt
-from ..motifs import petals, rosette, star
+from ..motifs import flared_cross, fleur_de_lis, petals, rosette, star
 from .base import Pattern, StaggeredLattice
 
 
@@ -159,14 +159,7 @@ class Sembrado(Pattern):
 
     @staticmethod
     def motif_flor_de_lis(x, y, r, ln, fl, dt, w):
-        petal = lens((x, y - r), (x, y + r * 0.3), r * 0.3)
-        out = [poly(petal, fill=ln)]
-        for side in (-1, 1):  # los dos pétalos laterales se abren hacia fuera
-            out.append(poly(lens((x, y + r * 0.15), (x + side * r * 0.8, y - r * 0.5), r * 0.16), fill=ln))
-        out.append(poly(box(x, y + r * 0.38, r * 0.52, r * 0.1), fill=ln))
-        out.append(poly([(x - r * 0.28, y + r * 0.52), (x + r * 0.28, y + r * 0.52), (x, y + r * 0.95)], fill=ln))
-        out.append(circle(x, y - r * 0.3, r * 0.1, fill=dt))
-        return out
+        return fleur_de_lis(x, y, r, ln, dt)
 
     @staticmethod
     def motif_trebol(x, y, r, ln, fl, dt, w):
@@ -187,16 +180,3 @@ class Sembrado(Pattern):
         # el lunar pequeño va a media celda exacta: cualquier otra distancia rompe el espejo
         return [circle(x, y, r * 0.42, fill=ln), circle(x + r / 0.68, y, r * 0.16, fill=dt)]
 
-
-def flared_cross(x, y, r, waist, tip):
-    """Cruz paté: brazos que se ensanchan de ``waist`` en el centro a ``tip`` en la punta."""
-    pts = []
-    for k in range(4):
-        a = -math.pi / 2 + k * math.pi / 2
-        ux, uy = math.cos(a), math.sin(a)
-        px, py = -uy, ux                      # perpendicular al brazo
-        nx, ny = math.cos(a + math.pi / 2), math.sin(a + math.pi / 2)
-        pts.append((x + ux * r - px * tip, y + uy * r - py * tip))
-        pts.append((x + ux * r + px * tip, y + uy * r + py * tip))
-        pts.append((x + (ux + nx) * waist, y + (uy + ny) * waist))
-    return pts

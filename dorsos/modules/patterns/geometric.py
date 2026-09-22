@@ -1,6 +1,4 @@
 """Patrones geométricos: rombos, celosía y retícula."""
-import math
-
 from ...geometry import box, diagonal_segment, diamond, star_polygon
 from ...primitives import circle, line, poly
 from ...registry import register

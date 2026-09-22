@@ -9,8 +9,27 @@ imágenes externas; la única dependencia es Pillow.
   va en la cabecera y la configuración en un chunk de texto) y SVG en milímetros.
 - **Todo es configuración JSON**: la misma configuración da siempre la misma imagen.
 
-![aleatorios](muestras/aleatorios.png)
-![patrones](muestras/patrones.png)
+## Estructura
+
+```
+generador-dorsos/
+├── dorsos/
+│   ├── constants.py  config.py  errors.py  registry.py     # datos y validación
+│   ├── geometry.py  primitives.py  scene.py                 # geometría y escena
+│   ├── compose.py                                           # configuración → escena
+│   ├── render_png.py  render_svg.py                         # salidas
+│   ├── palettes.py  presets.py  presets/*.json  randomize.py
+│   ├── sheet.py  cli.py  __main__.py
+│   └── modules/  frames.py  medallions.py  corners.py  motifs.py  keys.py  patterns/
+├── tests/          # pytest
+├── docs/methodology/model.tex          # matemáticas: retículas, simetría, curvas
+├── docs/documentation/module.md        # referencia de cada módulo
+└── muestras/       # hojas de muestras generadas con `sheet`
+```
+
+Cada módulo ornamental declara sus opciones con `Opt`; de ahí salen la validación, los
+valores por defecto, la randomización y el listado de `modules`. Añadir un módulo es una
+clase con `@register("pattern", "nombre")`; ver `docs/documentation/module.md`.
 
 ## Instalación
 
@@ -47,6 +66,10 @@ python -m dorsos generate --preset marino-arcos --random palette medallion --cou
 # Hoja de muestras en cuadrícula (presets o aleatorios)
 python -m dorsos sheet --presets --cols 6 -o muestras/presets.png
 python -m dorsos sheet --random --count 18 --seed 1 --cols 6 -o muestras/aleatorios.png
+
+# Catálogo: una carta por cada variante de una capa
+python -m dorsos sheet --catalog frame --cols 7 -o muestras/marcos.png
+python -m dorsos sheet --catalog pattern --cols 7 -o muestras/patrones.png
 
 # Listar presets y módulos con todas sus opciones
 python -m dorsos presets
@@ -118,6 +141,7 @@ El orden de prioridad es: valores por defecto → `--preset` → `--config` → 
 |---|---|
 | `-o`, `--out FICHERO` | PNG de la hoja. Por defecto `salida/muestras.png`. |
 | `--presets` | Una carta por preset. Sin esta bandera, dorsos aleatorios. |
+| `--catalog RANURA` | Una carta por cada variante de `frame`, `pattern`, `medallion` o `corners`. |
 | `--count N` | Cuántos dorsos aleatorios. Por defecto 12. |
 | `--cols N` | Columnas de la cuadrícula. Por defecto 6. |
 | `--height N` | Alto en píxeles de cada carta. Por defecto 420. |
@@ -171,7 +195,7 @@ que cambiar la paleta cambie el dorso entero de forma coherente.
 
 ## Patrones
 
-El patrón es el fondo repetido que llena el campo. Hay 15 patrones con 51 variantes entre
+El patrón es el fondo repetido que llena el campo. Hay 15 patrones con 52 variantes entre
 todos. Comparten estas opciones:
 
 | Opción | Por defecto | Qué hace |
@@ -221,9 +245,10 @@ todos. Comparten estas opciones:
 | `espiga` | `espiga` | Barras a ±45° alternadas: espiga de parqué. | |
 | | `galon` | Chevrones gruesos en bandas paralelas. | |
 | | `zigzag` | Zigzag de líneas finas, dos por fila. | |
-| `greca` | `meandro` | Greca griega: espirales abiertas sobre un raíl continuo. | |
-| | `olas` | Onda corrida: la misma greca con un giro menos. | |
-| | `almenado` | Onda cuadrada continua, sin raíl. | |
+| `greca` | `meandro` | Greca griega clásica de doble espiral, en bandas separadas por raíles. | |
+| | `olas` | Onda corrida: llave de una sola vuelta. | |
+| | `almenado` | Almenas: onda cuadrada de almenas y huecos iguales. | |
+| | `espiral` | Una sola greca que se enrosca hasta el centro, en S. Ver la nota. | |
 | `entrelazo` | `cesteria` | Cestería: listones tumbados y de pie en damero. | `bars` |
 | | `trenza` | Cintas diagonales que pasan por encima y por debajo. | |
 | `damasco` | `ojiva` | Mandorlas ojivales al tresbolillo. | `petals` |
@@ -246,14 +271,55 @@ todos. Comparten estas opciones:
 retícula y `cell_mm` es la separación entre anillos. `panal`, `damasco` y `sembrado` van al
 tresbolillo, con las filas impares desplazadas media celda.
 
+La greca se dibuja sobre una rejilla en la que trazo y hueco miden lo mismo, con esquinas en
+ángulo recto. En las bandas, `cell_mm` es el ancho de un módulo. En `espiral` es la distancia
+entre dos vueltas del mismo brazo. **La espiral solo tiene simetría de giro**: una espiral
+gira en un sentido y su imagen en el espejo en el contrario, así que con
+`symmetry.bilateral` activo (el valor por defecto) el espejo la convierte en rectángulos
+concéntricos. Para verla como espiral:
+
+```bash
+python -m dorsos generate --preset greca-espiral
+python -m dorsos generate --set pattern.kind=greca --set pattern.options.style=espiral \
+    --set symmetry.bilateral=false
+```
+
+Con `rotational_180` activo la carta sigue sin derecho ni revés.
+
 ## Marcos
 
 | Marco | Aspecto | Opciones propias |
 |---|---|---|
 | `simple` | Una línea. | `weight` |
 | `doble` | Dos líneas concéntricas, una gruesa y una fina. | `outer_weight`, `inner_weight`, `gap_mm` |
-| `geometrico` | Banda con motivo repetido: `rombos`, `dientes`, `cuadros`, `puntos`, `escalones`. | `motif`, `band_mm`, `unit_ratio` |
-| `ornamentado` | Banda con `festones`, `perlas`, `hojas`, `cadeneta` o `arcos`, y roseta en las esquinas. | `motif`, `band_mm`, `unit_ratio`, `petals` |
+| `geometrico` | Banda con un motivo geométrico repetido (ver abajo). | `motif`, `band_mm`, `unit_ratio` |
+| `ornamentado` | Banda con un motivo ornamental repetido y una roseta en cada esquina (ver abajo). | `motif`, `band_mm`, `unit_ratio`, `petals` |
+
+| Marco | `motif` | Aspecto |
+|---|---|---|
+| `geometrico` | `rombos` | Rombos con otro menor dentro. |
+| | `dientes` | Dientes de sierra enfrentados. |
+| | `cuadros` | Cuadrados con un punto. |
+| | `puntos` | Círculos con un punto. |
+| | `escalones` | Pirámides escalonadas. |
+| | `ajedrez` | Dos filas de cuadros en damero. |
+| | `greca` | Greca griega de doble espiral entre dos raíles, con cuadrados concéntricos en las esquinas. |
+| | `greca_simple` | Greca de una sola vuelta. |
+| | `almenas` | Almenado continuo. |
+| `ornamentado` | `festones` | Arcos rellenos con un botón. |
+| | `perlas` | Sarta de perlas entre dos filetes. |
+| | `hojas` | Hojas en espiga. |
+| | `cadeneta` | Anillos entrelazados. |
+| | `arcos` | Arcada con un anillo sobre cada arco y una lanza entre ellos. |
+| | `ovas` | Ovas y dardos: huevo en su cáscara y dardo entre cada dos. |
+| | `postas` | Onda vitruviana que se enrosca hacia atrás. |
+| | `cordon` | Cordón de hebras trenzadas. |
+| | `palmetas` | Abanicos de cinco hojas con un botón entre ellos. |
+
+Las grecas imponen su propia proporción (celdas cuadradas) y ponen un número par de
+módulos por lado, para que el centro caiga entre dos y el espejo no parta ninguno; por eso
+ignoran `unit_ratio`. La banda mide 13 unidades de rejilla, así que con el `band_mm` por
+defecto el trazo es muy fino: `5`–`6` mm la dejan como en una greca de imprenta.
 
 Comunes: `color`, `inset_mm` (separación del borde del campo) y `pad_mm` (aire hacia el
 interior). Los de línea añaden `corner` (`recto`, `redondo`, `cortado`, `concavo`),
@@ -272,9 +338,13 @@ aspecto de los dorsos en los que la trama llega al borde y la línea la corta.
 | `roseta` | Festoneado en lóbulos circulares (`lobes`). |
 | `cuatrilobulo` | Cuatro lóbulos. |
 | `estrella` | Estrella de `petals` puntas. |
+| `octogono` | Octógono con un lado arriba. |
+| `hexagono` | Hexágono con un vértice arriba. |
+| `cruz` | Cruz paté de brazos ensanchados. |
 
 Opciones: `size` (0,25–0,9 del ancho interior), `interior` (`roseta`, `estrella`, `rombo`,
-`circulo`, `flor`, `ninguno`), `rings` (1–4 contornos), `beads` (perlas en el borde),
+`circulo`, `flor`, `sol`, `cruz`, `octograma`, `anillos`, `ninguno`), `rings` (1–4
+contornos), `beads` (perlas en el borde),
 `halo_mm` (halo que despeja el patrón debajo) y los colores `line`, `fill`, `dot`, `halo`.
 
 | Esquinas | Aspecto | Opciones propias |
@@ -284,6 +354,14 @@ Opciones: `size` (0,25–0,9 del ancho interior), `interior` (`roseta`, `estrell
 | `roseta` | Roseta apoyada en la esquina. | `petals` |
 | `rombos` | Racimo de rombos y puntos. | |
 | `hojas` | Hojas en abanico. | `leaves` |
+| `escuadra` | Dos ángulos paralelos con remates redondos. | |
+| `volutas` | Dos volutas simétricas unidas por un arco. | |
+| `estrella` | Estrella de ocho puntas. | |
+| `lis` | Flor de lis en diagonal, con la punta hacia el centro. | |
+
+Medallón y esquinas no llevan formas con sentido arriba-abajo (un escudo, una lis en el
+centro): el medallón cruza los dos ejes y el espejo las duplicaría del revés. La lis de
+esquina sí funciona, porque cada esquina es la anterior reflejada.
 
 Comunes: `size_mm`, `clear` (despeja el fondo debajo) y los colores `line`, `fill`, `dot`.
 
@@ -320,30 +398,9 @@ Bloquear `pattern.kind` conserva el patrón pero sigue variando sus opciones. `f
 `python -m dorsos presets` los lista. Los cinco últimos reproducen dorsos comerciales
 clásicos: `marino-arcos` (arcada y rombos macizos), `coral-celosia` y `pizarra-celosia`
 (celosía diagonal a sangre), `marino-mosaico` y `carmin-mosaico` (rombos cóncavos sobre
-blanco). Un preset es un JSON parcial en `dorsos/presets/`; añadir uno es copiar un fichero
-ahí.
-
-## Estructura
-
-```
-generador-dorsos/
-├── dorsos/
-│   ├── constants.py  config.py  errors.py  registry.py     # datos y validación
-│   ├── geometry.py  primitives.py  scene.py                 # geometría y escena
-│   ├── compose.py                                           # configuración → escena
-│   ├── render_png.py  render_svg.py                         # salidas
-│   ├── palettes.py  presets.py  presets/*.json  randomize.py
-│   ├── sheet.py  cli.py  __main__.py
-│   └── modules/  frames.py  medallions.py  corners.py  motifs.py  patterns/
-├── tests/          # pytest
-├── docs/methodology/model.tex          # matemáticas: retículas, simetría, curvas
-├── docs/documentation/module.md        # referencia de cada módulo
-└── muestras/       # hojas de muestras generadas con `sheet`
-```
-
-Cada módulo ornamental declara sus opciones con `Opt`; de ahí salen la validación, los
-valores por defecto, la randomización y el listado de `modules`. Añadir un módulo es una
-clase con `@register("pattern", "nombre")`; ver `docs/documentation/module.md`.
+blanco). `greca-marfil` lleva la greca como borde, `ovas-granate` combina ovas, damasco,
+sol y lises, y `greca-espiral` es la greca en espiral (sin espejo). Un preset es un JSON
+parcial en `dorsos/presets/`; añadir uno es copiar un fichero ahí.
 
 ## Cómo funciona la simetría
 
@@ -356,13 +413,15 @@ píxel; en SVG se usan `<use>` con `<clipPath>`. Detalle en `docs/methodology/mo
 ## Pruebas y documentación matemática
 
 ```bash
-python -m pytest                       # 427 pruebas, unos 13 s
+python -m pytest                       # 551 pruebas, unos 15 s
 cd docs/methodology && pdflatex model.tex && pdflatex model.tex
 ```
 
 Las pruebas comprueban tamaño físico y `dpi` del PNG, determinismo por semilla, simetría
 píxel a píxel, ida y vuelta del JSON, que cada módulo y cada valor de cada opción se
-dibuja, bloqueos y capas de la randomización, SVG válido y la CLI.
+dibuja, bloqueos y capas de la randomización, SVG válido y la CLI. Para la greca comprueban
+además que los módulos se encadenan, que ningún tramo toca a otro no contiguo (el hueco de
+una unidad) y que la espiral es un solo trazo simétrico al girarla 180°.
 
 ## Limitaciones
 
@@ -374,3 +433,6 @@ dibuja, bloqueos y capas de la randomización, SVG válido y la CLI.
   central de la simetría puede notarse como una línea muy fina según el visor.
 - Los presets que imitan dorsos comerciales son aproximaciones hechas a ojo, no calcos.
 - El PNG es RGB(A) sin perfil de color ni sangrado de impresión.
+
+![patrones](muestras/patrones.png)
+![marcos](muestras/marcos.png)

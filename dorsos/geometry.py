@@ -109,6 +109,12 @@ def circle_points(cx, cy, r, segments=CIRCLE_SEGMENTS) -> list[Point]:
     return arc(cx, cy, r, 0, TAU, segments)[:-1]
 
 
+def ellipse_points(cx, cy, rx, ry, a0=0.0, a1=TAU, segments=None) -> list[Point]:
+    """Arco de elipse de semiejes ``rx`` y ``ry``; completa por defecto (sin repetir el primer punto)."""
+    n = segments or _segments(a1 - a0)
+    pts = [(cx + rx * math.cos(a0 + (a1 - a0) * k / n), cy + ry * math.sin(a0 + (a1 - a0) * k / n))
+           for k in range(n + 1)]
+    return pts[:-1] if abs(a1 - a0 - TAU) < 1e-9 else pts
 
 
 def regular_polygon(cx, cy, r, n, rot=-math.pi / 2) -> list[Point]:
@@ -133,8 +139,6 @@ def diamond(cx, cy, rx, ry=None) -> list[Point]:
 def box(cx, cy, hw, hh=None) -> list[Point]:
     hh = hw if hh is None else hh
     return [(cx - hw, cy - hh), (cx + hw, cy - hh), (cx + hw, cy + hh), (cx - hw, cy + hh)]
-
-
 
 
 def lens(p, q, bulge, n=14) -> list[Point]:
@@ -190,8 +194,6 @@ def union_of_circles(circles, samples=360) -> list[Point]:
                 best = max(best, proj + math.sqrt(disc))
         pts.append((best * ux, best * uy))
     return pts
-
-
 
 
 def rect_outline(rect: Rect, style="recto", radius=0.0) -> list[Point]:

@@ -1,11 +1,11 @@
 """Ornamentos de esquina. Se diseñan para la esquina superior izquierda y se reflejan a las otras tres."""
 import math
 
-from ..geometry import Affine, arc, diamond, lens
+from ..geometry import Affine, arc, diamond, lens, spiral, star_polygon
 from ..primitives import circle, line, poly, transform_all
 from ..registry import register
 from .base import Module, Opt
-from .motifs import rosette
+from .motifs import fleur_de_lis, rosette
 
 
 class Corners(Module):
@@ -111,3 +111,61 @@ class CornerLeaves(Corners):
                             fill=fl, stroke=ln, width=w))
         out.append(circle(0, 0, size * 0.13, fill=dt, stroke=ln, width=w))
         return out
+
+
+@register("corners", "escuadra")
+class CornerBracket(Corners):
+    doc = "Escuadra: dos ángulos paralelos con remates redondos, como los herrajes de esquina."
+    options = {**Corners.common}
+
+    def ornament(self, ctx, size, ln, fl, dt):
+        s, bar = size, size * 0.13
+        inner, thin = size * 0.27, size * 0.07
+        return [poly(_box(0, 0, s, bar), fill=ln), poly(_box(0, 0, bar, s), fill=ln),
+                poly(_box(inner, inner, s * 0.78, inner + thin), fill=ln),
+                poly(_box(inner, inner, inner + thin, s * 0.78), fill=ln),
+                circle(s, bar / 2, bar * 0.75, fill=dt), circle(bar / 2, s, bar * 0.75, fill=dt),
+                poly(diamond(s * 0.56, s * 0.56, s * 0.1), fill=dt)]
+
+
+@register("corners", "volutas")
+class CornerScrolls(Corners):
+    doc = "Dos volutas simétricas respecto de la diagonal, unidas por un arco."
+    options = {**Corners.common}
+
+    def ornament(self, ctx, size, ln, fl, dt):
+        w = ctx.weight(1.4)
+        r, mid = size * 0.2, size * 0.42
+        # voluta a lo largo del borde de arriba; la otra es su reflejo en la diagonal
+        curl = spiral(size * 0.62, mid - r, r, r * 0.2, math.pi, 1.2, direction=-1)
+        mirrored = [(y, x) for x, y in curl]
+        joint = arc(mid, mid, r, math.pi, 1.5 * math.pi)
+        return [line(curl, ln, w), line(mirrored, ln, w), line(joint, ln, w),
+                circle(size * 0.62, mid - r, size * 0.05, fill=dt), circle(mid - r, size * 0.62, size * 0.05, fill=dt)]
+
+
+@register("corners", "estrella")
+class CornerStar(Corners):
+    doc = "Estrella de ocho puntas apoyada en la esquina."
+    options = {**Corners.common}
+
+    def ornament(self, ctx, size, ln, fl, dt):
+        c, r, w = size * 0.5, size * 0.46, ctx.weight(1.0)
+        return [poly(star_polygon(c, c, r, r * 0.45, 8), fill=fl, stroke=ln, width=w),
+                poly(star_polygon(c, c, r * 0.5, r * 0.25, 8), fill=ln),
+                circle(c, c, r * 0.12, fill=dt)]
+
+
+@register("corners", "lis")
+class CornerLis(Corners):
+    doc = "Flor de lis en diagonal, con la punta hacia el centro de la carta."
+    options = {**Corners.common}
+
+    def ornament(self, ctx, size, ln, fl, dt):
+        # La lis se dibuja con la punta hacia arriba; girada 135° apunta hacia dentro.
+        place = Affine.rotate(3 * math.pi / 4).then(Affine.translate(size * 0.48, size * 0.48))
+        return transform_all(fleur_de_lis(0, 0, size * 0.5, ln, dt), place)
+
+
+def _box(x0, y0, x1, y1):
+    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
